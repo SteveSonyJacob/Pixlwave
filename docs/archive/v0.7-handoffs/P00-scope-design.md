@@ -1,20 +1,22 @@
-# P08 handoff - Fulfillment, seven-day cancellation, and refunds
+> HISTORICAL v0.7 HANDOFF - superseded by the seven-phase v0.8 plan. Do not implement from this file or treat its phase/test IDs as current. Use [current phase mapping](../../phase-mapping.md) and [active handoffs](../../../handoff.md). Original test descriptions below are retained for provenance; relative source links were adjusted for this archive.
+
+# P00 handoff - Scope, admin workflow, and design
 
 Plan version: 0.7 draft. Updated: 2026-09-15.  
-Status: NOT STARTED  
+Status: DRAFT / AWAITING REMAINING DETAILS  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
 ## Context and current authority
 
-Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
+Read [the plan](../../../plan.md), [handoff guide](../../../handoff.md) and [decision register](../../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R13, R14, R16.  
-Dependencies: P07.  
-Decision gates: D05 confirmed cancellation allocation; D06 manual refund recording and exception details; D07 accounting verification; D08 payout review. Both seven-day clocks start at successful payment.
+Requirements: R01, R08-R15, R18.  
+Dependencies: Source documents and latest client clarification.  
+Decision gates: D01 confirmed 192-hour notice / 168-hour cutoff; D05 confirmed cancellation allocation; D06 manual refund workflow; D07 confirmed outcome-specific deductions; D08 release details. Payment-origin seven-day clocks, automatic rejection, manual refund task creation and approval-only reservation are settled.
 
-Previous phase: [P07 - Upfront grouped payment and rejection refunds](P07-payments-ledger.md).
+Starting inputs: latest client answers, source blueprint, UI references and current planning draft.
 
 Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
@@ -28,26 +30,22 @@ Current workflow: one upfront cart payment; admin coordinates/decides within sev
 
 ## Planned deliverables
 
-- [ ] Build confirmed campaign schedules, owner service/evidence records and admin completion/non-delivery decisions. Scheduled/live-window notifications indicate dates only, never verified playback. Completion requires admin evidence verification; no physical playback control.
-- [ ] Allow advertiser cancellation only before successful payment + seven days. Refund 95% of the cancelled booking amount; allocate 5% to Pixlwave inclusive of Razorpay processing charges, with no separate processing deduction or added fulfillment commission. Preserve the request timestamp, queue the refund for admin and mark refunded only after admin records its completed payment reference.
-- [ ] Block ordinary cancellation/refund eligibility after the cutoff while retaining owner inability/non-delivery as the business exception. Preserve eligibility for timely requests whose manual processing completes later.
-- [ ] Refund undelivered daily units or theatre show/slot units at the booked rate; support partial delivery, evidence and admin decision reasons.
-- [ ] Remove pause/resume, campaign extensions and in-place rescheduling/change actions from scope. Later advertising dates use a separate booking. Keep fulfillment, refund and settlement status separate.
-
-- [ ] Review unit-linked evidence before admin-verifying completion. Use booked prices for fully missed units; let admin manually determine partial-delivery refunds with a reason and evidence. Record applicable actual Razorpay charges separately, deduct them once and apply no owner-failure penalty.
+- [ ] Approve the admin-mediated workflow, permission matrix, charged-cart/item definitions, deadline examples and refund eligibility matrix.
+- [ ] Document price ownership: owner supplies the initial base price; only admin changes a published rate after owner discussion. Preserve booked-price history.
+- [ ] Review all three category forms, upfront checkout, paid-awaiting-admin status, admin coordination notes, advertiser cancellation, refund tracking and owner fulfillment screens.
+- [ ] Implement the confirmed 192-hour notice, 168-hour review/cancellation cutoff and owner non-delivery exception; use the successful-payment clock and verify deadline rejection creates a manual refund task without moving money.
+- [ ] Review reference-led responsive designs, provider/data plan, media requirements and estimated startup operating costs.
 
 ## Planned testing and validation
 
-- [ ] P08-T01: Test cancellation immediately before/at/after seven-day expiry, including an accepted booking and a timely cancellation manually processed after the cutoff. Assert eligibility is preserved and no automated refund occurs.
-- [ ] P08-T02: For manual rejection, deadline rejection and owner non-delivery after day seven, verify net refund equals the affected paid amount less applicable actual Razorpay processing charges. No 5% cancellation fee or other penalty applies; admin records manual completion and duplicate deductions are blocked.
-- [ ] P08-T03: Verify Rs 10,000 cancellation refunds Rs 9,500 and allocates Rs 500 to Pixlwave inclusive of processing charges, with no additional fee or owner payout on the cancelled amount. Test partial-cart allocation, paise rounding, cumulative refund limits, duplicate refunds, gateway failure and refund-versus-payout races.
-- [ ] P08-T04: Verify absence of pause/change endpoints, authorization on evidence, truthful fulfillment status and continued access to valid non-delivery claims without a 48-hour expiry.
+- [ ] P00-T01: Walk through paid cart submission, manual admin-owner discussion and mixed item decisions without exposing requests to owner accounts.
+- [ ] P00-T02: Use dated IST examples to validate minimum notice and seven-day boundaries, including a day-seven rejection and a day-seven cancellation awaiting refund processing.
+- [ ] P00-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
+- [ ] P00-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
 
-- [ ] P08-T05: Separate scheduled status, owner-reported completion and admin verification. For partial delivery, require an authorized admin-entered refund assessment, reason and unit-linked evidence; enforce remaining paid-value limits and audit changes without automatically calculating an hours/plays refund.
+Manual acceptance scenario: Client reviews the new complete flow and designs; distinguish accepted rules from outstanding details.
 
-Manual acceptance scenario: Run timely cancellation, rejected late cancellation, late owner non-delivery, partial refund and completion with evidence.
-
-Exit gate: Accepted seven-day rules and exception are enforced; refund execution and banking time are distinguished from eligibility.
+Exit gate: Core workflow and designs accepted; unresolved parameters have explicit gates rather than invented defaults.
 
 ## Actual implementation record
 
@@ -74,11 +72,10 @@ These are unexecuted checks, not completed results.
 
 | Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
-| P08-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P08-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P08-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P08-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P08-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
 | Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
 
 Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
@@ -102,7 +99,7 @@ During implementation, record defects with severity, reproduction, affected requ
 
 ## Next-phase handoff
 
-Next: [P09 - Owner settlement and admin finance](P09-settlements-admin.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
+Next: [P01 - Engineering foundation](P01-foundation.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
 Before transfer:
 - [ ] Delivered scope and actual revision documented.

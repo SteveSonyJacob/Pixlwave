@@ -1,3 +1,5 @@
+> HISTORICAL v0.7 HANDOFF - superseded by the seven-phase v0.8 plan. Do not implement from this file or treat its phase/test IDs as current. Use [current phase mapping](../../phase-mapping.md) and [active handoffs](../../../handoff.md). Original test descriptions below are retained for provenance; relative source links were adjusted for this archive.
+
 # P05 handoff - Cart, capacity, and admin review domain
 
 Plan version: 0.7 draft. Updated: 2026-09-15.  
@@ -8,7 +10,7 @@ Manual acceptance: NOT REVIEWED
 
 ## Context and current authority
 
-Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
+Read [the plan](../../../plan.md), [handoff guide](../../../handoff.md) and [decision register](../../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
 Requirements: R05-R11.  
 Dependencies: P04; domain work uses explicit paid fixtures until P07 wires the verified gateway.  

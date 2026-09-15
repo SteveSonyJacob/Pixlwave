@@ -1,4 +1,6 @@
-# P06 handoff - Notifications, admin reminders, and support
+> HISTORICAL v0.7 HANDOFF - superseded by the seven-phase v0.8 plan. Do not implement from this file or treat its phase/test IDs as current. Use [current phase mapping](../../phase-mapping.md) and [active handoffs](../../../handoff.md). Original test descriptions below are retained for provenance; relative source links were adjusted for this archive.
+
+# P09 handoff - Owner settlement and admin finance
 
 Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
@@ -8,13 +10,13 @@ Manual acceptance: NOT REVIEWED
 
 ## Context and current authority
 
-Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
+Read [the plan](../../../plan.md), [handoff guide](../../../handoff.md) and [decision register](../../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R16, R02.  
-Dependencies: P05 event contracts and P02 identities; real payment triggers connected in P07.  
-Decision gates: D09 delivery providers; D01 confirmed 192-hour notice / 168-hour cutoff. Payment-origin deadlines, automatic rejection and manual refund task creation are confirmed.
+Requirements: R15, R03.  
+Dependencies: P08; provider account verification.  
+Decision gates: D07 accounting verification; D08 completion approval details; D13 manual payout workflow.
 
-Previous phase: [P05 - Cart, capacity, and admin review domain](P05-booking-cart.md).
+Previous phase: [P08 - Fulfillment, seven-day cancellation, and refunds](P08-campaigns-refunds.md).
 
 Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
@@ -28,26 +30,26 @@ Current workflow: one upfront cart payment; admin coordinates/decides within sev
 
 ## Planned deliverables
 
-- [ ] Deliver payment-received, admin-review, acceptance/rejection, cancellation, refund, fulfillment and support events through in-app/email/SMS as appropriate to role.
-- [ ] Send admin deadline reminders and notifications for deadline rejection and pending manual refunds at seven days. Show actual advertiser cancellation eligibility and refund status.
-- [ ] Use durable outbox delivery, idempotency, retry/backoff, bounce/failure tracking and accurate links; notification delays never silently extend eligibility.
-- [ ] Implement booking-linked support tickets, attachments, admin replies and private internal notes. Customer requests and creatives are not automatically forwarded to owners.
-- [ ] Use ordinary Gmail/other recipient delivery with configured SMTP/SMS providers; no waiting-to-pay or 48-hour countdown campaigns.
+- [ ] Provide admin reports for paid-pending funds, rejected/cancelled liabilities, accepted commitments, completed service, refunds, platform revenue and owner earnings.
+- [ ] Release only an accepted, fulfilled booking's reconciled owner balance after admin review; neither day seven nor a removed 48-hour timer triggers payout.
+- [ ] Implement admin-only manual owner transfer records after fulfillment verification, with beneficiary, amount, bank reference, proof, operator and timestamps. Do not integrate Route or any automatic payout API.
+- [ ] Require admin to record the completed external bank transfer before showing settled. Guard against duplicate references/settlement records; uncertain transfers remain unresolved until manually reconciled.
+- [ ] Provide exception reconciliation for missing payment evidence, failed or uncertain manual transfers, post-settlement owner non-delivery and manual refunds. Preserve audited corrections; do not automatically debit an owner or issue a second transfer.
 
-- [ ] Use ticket states open/in-progress/resolved/closed with audited replies and private notes; show notification delivery status separately from booking state. Scheduled-start notices never claim verified playback.
+- [ ] Store one manual external transaction with balanced eligible line allocations. Record ineligible or uncertain external transfers as audited reconciliation exceptions without falsely marking service verified.
 
 ## Planned testing and validation
 
-- [ ] P06-T01: Check recipient/channel routing and confirm owners receive neither raw booking requests nor customer/admin private notes.
-- [ ] P06-T02: Test duplicate events, email bounce, SMS timeout and worker recovery without lost/duplicate business actions.
-- [ ] P06-T03: Verify IST timestamps, admin due/overdue reminders, paid-awaiting-review wording and notifications after actual refund outcome.
-- [ ] P06-T04: Attempt cross-account ticket/media access; receive real provider test messages and record any blocked external validation.
+- [ ] P09-T01: Prove paid-pending, rejected, cancelled, unfulfilled and disputed items cannot be marked eligible for normal owner settlement in the website; eligible completed items settle independently within a mixed cart. Record any erroneous external transfer as an exception, not an approved payout.
+- [ ] P09-T02: Test duplicate manual transfer records, missing bank reference/proof, unverified beneficiary, failed or uncertain transfer, unauthorized status changes and concurrent admin edits. Assert no payout/Route API is called.
+- [ ] P09-T03: Race owner non-delivery refund against payout; account for refunds discovered after settlement without silently creating a negative recoverable balance.
+- [ ] P09-T04: Reconcile 85% owner share and 15% gross commission with Razorpay processing charges deducted from Pixlwave's commission on completed service. Verify manual refunds/transfers against bank references and enforce admin permissions and audit history.
 
-- [ ] P06-T05: Start a scheduled campaign window with no evidence: notify only its scheduled status, never observed playback or verified completion. Confirm resolved tickets retain authorized reply history and private notes stay private.
+- [ ] P09-T05: Reconcile one bank transfer covering multiple eligible lines for the same owner without duplicate counting. Record an erroneous external transfer as an exception and block normal settlement/fulfillment status changes.
 
-Manual acceptance scenario: Receive paid/request-decision/refund notices, review an admin due alert and resolve a ticket using separate accounts.
+Manual acceptance scenario: Review pending funds, settle one fulfilled booking, block an unfulfilled booking and rehearse failure/manual recovery paths.
 
-Exit gate: Required event delivery and support are correct; provider-backed delivery evidence is recorded.
+Exit gate: Eligible payout records require fulfillment verification and admin-recorded transfer completion. Recorded movements reconcile with provider/bank references; the website neither creates nor controls external bank transfers.
 
 ## Actual implementation record
 
@@ -74,11 +76,11 @@ These are unexecuted checks, not completed results.
 
 | Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
-| P06-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P06-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P06-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P06-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P06-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P09-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P09-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P09-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P09-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P09-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
 | Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
 
 Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
@@ -102,7 +104,7 @@ During implementation, record defects with severity, reproduction, affected requ
 
 ## Next-phase handoff
 
-Next: [P07 - Upfront grouped payment and rejection refunds](P07-payments-ledger.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
+Next: [P10 - System validation and operational readiness](P10-hardening.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
 Before transfer:
 - [ ] Delivered scope and actual revision documented.

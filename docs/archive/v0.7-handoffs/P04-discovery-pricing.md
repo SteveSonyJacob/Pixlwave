@@ -1,4 +1,6 @@
-# P03 handoff - Inventory, owner base prices, and media
+> HISTORICAL v0.7 HANDOFF - superseded by the seven-phase v0.8 plan. Do not implement from this file or treat its phase/test IDs as current. Use [current phase mapping](../../phase-mapping.md) and [active handoffs](../../../handoff.md). Original test descriptions below are retained for provenance; relative source links were adjusted for this archive.
+
+# P04 handoff - Discovery and admin-controlled pricing
 
 Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
@@ -8,13 +10,13 @@ Manual acceptance: NOT REVIEWED
 
 ## Context and current authority
 
-Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
+Read [the plan](../../../plan.md), [handoff guide](../../../handoff.md) and [decision register](../../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R03-R07, R10, R18.  
-Dependencies: P02.  
-Decision gates: D03 custom-route policy accepted; D04 initial price publication details; D14 media/slot limits; D16 Mappls verification.
+Requirements: R04, R08, R18.  
+Dependencies: P03.  
+Decision gates: D04 initial rate publication/effective-time details; D01 confirmed timestamp boundaries; D11 Kerala launch and D16 Mappls accepted.
 
-Previous phase: [P02 - Authentication and role permissions](P02-auth-roles.md).
+Previous phase: [P03 - Inventory, owner base prices, and media](P03-inventory-media.md).
 
 Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
@@ -28,26 +30,26 @@ Current workflow: one upfront cart payment; admin coordinates/decides within sev
 
 ## Planned deliverables
 
-- [ ] Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
-- [ ] Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication; snapshot them on paid bookings.
-- [ ] Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
-- [ ] Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
-- [ ] Implement creative/evidence upload foundations: file type/size checks, scan/quarantine, safe preview, private access, expiring downloads and retention controls. Preserve booked commitments when inventory changes.
+- [ ] Build Kerala-first homepage/search/map/details, featured inventory, city/locality/category/date/budget filters, responsive navigation and clear availability labels. Details include listing images, dimensions/resolution, pin/address, owner-attributed audience estimates, published unit prices and an availability calendar.
+- [ ] Display fixed current admin-published day/show/slot rates; calculate totals from dated units. No demand or nearby-screen price adjustment service.
+- [ ] Create immutable quote/paid-line price snapshots, rate versions and customer-visible price-change checks before payment; admin changes affect future quotes only.
+- [ ] Use Mappls markers/clustering and owner-defined route display through the provider adapter; pricing uses listing rates and booking units, not map traffic/demand.
+- [ ] Keep geography extensible for later states while enforcing Kerala launch inventory eligibility.
 
-- [ ] Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
+- [ ] Provide complete source-blueprint listing details and calendar states; keep state selection Kerala-only at launch and display no fake audience or live-availability claims.
 
 ## Planned testing and validation
 
-- [ ] P03-T01: Verify draft/verified/published access; require admin approval of owner-specified ad duration, plays per show/day and operating hours. Reject invalid service values and prove owner API edits cannot change published price or paid service commitments.
-- [ ] P03-T02: Test show and rotating-slot capacity, blackout overlap and the no-other-approved-bookings custom-route condition across overlapping vehicle dates.
-- [ ] P03-T03: Reject spoofed/corrupt/oversized uploads and unauthorized downloads; verify scanning, expiring links and safe preview.
-- [ ] P03-T04: Check representative Kerala address/pin accuracy, provider failures and price audit history; reject capacity/route edits conflicting with committed service.
+- [ ] P04-T01: Verify search/filter/map/detail agreement, supported geography, clustering, empty/loading/quota failure states and restricted API keys.
+- [ ] P04-T02: Check totals for days/shows/slots, quantities and paise rounding; changing request counts, bookings or nearby prices must not change a published rate.
+- [ ] P04-T03: Change the published rate before checkout and require an updated visible quote; after payment prove admin edits never reprice the submitted item.
+- [ ] P04-T04: Review keyboard/screen-reader flow and mobile layouts; verify switching the map adapter does not alter booking or price data.
 
-- [ ] P03-T05: Validate duration, plays and operating hours against available service capacity; preserve paid service terms across listing edits and reject incompatible creative metadata before checkout.
+- [ ] P04-T05: Check image preview, dimensions/resolution, location pin, dated availability, price unit and attributed audience estimate on phone and desktop; date filters and the calendar must agree.
 
-Manual acceptance scenario: Owner creates one listing of each category; admin verifies it, records discussion and changes a rate; review uploads and map coordinates.
+Manual acceptance scenario: Compare discovery with UI references and verify an owner's base price, admin price revision and booked-price protection.
 
-Exit gate: All categories, owner base input, protected admin price updates and secure media are reviewable.
+Exit gate: Kerala discovery and fixed pricing work; no obsolete dynamic-pricing behaviour remains.
 
 ## Actual implementation record
 
@@ -74,11 +76,11 @@ These are unexecuted checks, not completed results.
 
 | Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
-| P03-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P03-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P03-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P03-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P03-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P04-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P04-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P04-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P04-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P04-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
 | Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
 
 Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
@@ -102,7 +104,7 @@ During implementation, record defects with severity, reproduction, affected requ
 
 ## Next-phase handoff
 
-Next: [P04 - Discovery and admin-controlled pricing](P04-discovery-pricing.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
+Next: [P05 - Cart, capacity, and admin review domain](P05-booking-cart.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
 Before transfer:
 - [ ] Delivered scope and actual revision documented.

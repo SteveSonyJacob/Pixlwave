@@ -1,14 +1,15 @@
 # Pixlwave development handoff guide
 
-Version: 0.7 draft. Updated: 2026-09-15. No application implementation has started.
+Version: 0.9 draft. Updated: 2026-09-15.
+Status: seven-phase plan only; application implementation NOT STARTED.
 
 ## Read before continuing
 
-1. Read [plan.md](plan.md) and [docs/decisions.md](docs/decisions.md).
-2. Read [source coverage and the review](docs/requirements-review.md), then the target phase file and preceding phase's actual exit evidence.
-3. Inspect the repository and applicable local instructions. Check facts against the handoff.
-4. Use current v0.7 rules; historical proposals must not become implementation.
-5. Resolve only the unanswered details relevant to the phase. A document or checklist existing is not proof a phase passed.
+1. Read [plan.md](plan.md), [decisions](docs/decisions.md) and [requirements review](docs/requirements-review.md).
+2. Read the current phase below and the previous phase's actual accepted exit evidence.
+3. Read [phase and test migration](docs/phase-mapping.md) when following an older reference; archived handoffs are historical only.
+4. Agree changed schemas, API/event contracts and permissions before parallel work. Use current implementation and repository instructions.
+5. A planned checklist or draft document is not proof that a phase passed.
 
 ## Current accepted model
 
@@ -23,65 +24,51 @@ Version: 0.7 draft. Updated: 2026-09-15. No application implementation has start
 - No direct owner approval, dynamic pricing, pause/resume/in-place changes, post-approval payment countdown or fixed 48-hour completion window.
 - LED, theatre and mobile slots, Kerala launch, Supabase, Mappls primary/Google fallback, India-hosted main servers/data, notifications and tickets remain in scope.
 
-## Current repository state
+## Seven active phases
 
-Planning Markdown, copied references and phase templates exist. There is no application scaffold, database schema, deployed environment, provider credential setup or executed application test evidence. All implementation statuses remain NOT STARTED and test statuses NOT RUN.
-
-This revision updates planned behaviour only. No data migration is required. Do not treat prior design discussion as client sign-off on all P00 outputs.
-
-## Phase index
-
-| Phase | Handoff | Current status |
+| Phase | Handoff | Status |
 | --- | --- | --- |
-| P00 | [Scope, admin workflow, and design](docs/handoffs/P00-scope-design.md) | DRAFT / AWAITING REMAINING DETAILS |
-| P01 | [Engineering foundation](docs/handoffs/P01-foundation.md) | NOT STARTED |
-| P02 | [Authentication and role permissions](docs/handoffs/P02-auth-roles.md) | NOT STARTED |
-| P03 | [Inventory, owner base prices, and media](docs/handoffs/P03-inventory-media.md) | NOT STARTED |
-| P04 | [Discovery and admin-controlled pricing](docs/handoffs/P04-discovery-pricing.md) | NOT STARTED |
-| P05 | [Cart, capacity, and admin review domain](docs/handoffs/P05-booking-cart.md) | NOT STARTED |
-| P06 | [Notifications, admin reminders, and support](docs/handoffs/P06-notifications-support.md) | NOT STARTED |
-| P07 | [Upfront grouped payment and rejection refunds](docs/handoffs/P07-payments-ledger.md) | NOT STARTED |
-| P08 | [Fulfillment, seven-day cancellation, and refunds](docs/handoffs/P08-campaigns-refunds.md) | NOT STARTED |
-| P09 | [Owner settlement and admin finance](docs/handoffs/P09-settlements-admin.md) | NOT STARTED |
-| P10 | [System validation and operational readiness](docs/handoffs/P10-hardening.md) | NOT STARTED |
-| P11 | [Client acceptance and production release](docs/handoffs/P11-launch.md) | NOT STARTED |
+| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | NOT STARTED |
+| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | NOT STARTED |
+| P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | NOT STARTED |
+| P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | NOT STARTED |
+| P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | NOT STARTED |
+| P06 | [Fulfillment and settlement](docs/handoffs/P06-fulfillment-settlement.md) | NOT STARTED |
+| P07 | [Production validation and launch](docs/handoffs/P07-production-launch.md) | NOT STARTED |
 
-P05 may use explicit funded fixtures to validate domain logic; actual gateway submission and rejected-item refunds are verified in P07. Fixtures do not establish a working live payment flow.
+There is no separate P00 phase. P01 includes the scope/design checkpoint. Owner listing and verification are P02; public discovery is P03. P04 proves booking/admin/capacity with restricted payment fixtures; P05 must validate the same flow with actual Razorpay sandbox capture and manual rejection refunds. P06 reuses these records for fulfillment and finance. P07 hardening and client acceptance precede release.
 
-## Required phase handoff record
+## Required handoff evidence
 
-Complete each existing phase file with:
-- Actual scope delivered, missing work and accepted decision IDs/date.
-- Branch/revision, implementation paths, environment/build URL and setup commands.
-- Schema/migration names, procedure, compatibility effects and recovery.
-- API/event contracts, permissions, invariants and representative non-sensitive payloads.
-- Configuration variable names and approved secret-store references, never secret values.
-- Exact tests run, revision/environment/time, observed results and report/screenshot/trace links.
-- Manual review steps, accounts/fixtures, browser/device, reviewer/date and approval or changes.
-- Known defects with severity, reproduction, impact, owner and blocking status.
-- Operations, alerts, automatic expiry jobs and manual refund queues, reconciliation and recovery instructions.
-- Next phase inputs, first concrete action and unresolved questions.
+For every phase record:
 
-## Validation record
+- Delivered scope, missing work, accepted decision IDs and exact implementation revision.
+- Changed files, schemas/migrations, backward compatibility and recovery procedure.
+- API/event contracts, roles, configuration names and secret-store references without secret values.
+- Completed integration with previous phases and affected regression cases, including their observed outcomes.
+- Exact test command or manual procedure, environment, date/time, expected/observed result and evidence links.
+- Real provider evidence separately from fixtures; blocked/skipped checks remain BLOCKED/NOT RUN.
+- Manual reviewer, acceptance result, defects/severity/owner and next-phase implications.
+- Operational procedures, monitoring, deadline jobs, manual finance reconciliation and next concrete action.
 
-| Check | Requirement | Command/manual procedure | Expected | Observed | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| Fill during implementation | Rxx / Dxx | Reproducible steps | Specific outcome | Actual result | Report/path/link | NOT RUN / BLOCKED / FAIL / PASS |
+Each phase file contains unfilled records and validation rows. All 59 earlier tests are mapped in [phase-mapping.md](docs/phase-mapping.md); seven additional tests explicitly cover phase integration. All 66 are planned, not executed.
 
-A mocked provider and a real sandbox run are different evidence. Skipped checks remain NOT RUN/BLOCKED. No screenshot or test result is implied by a planned checklist.
+## Parallel work and phase closure
 
-## Phase transition rules
+Parallel workstreams may share a phase after their interfaces are agreed. Merge and validate them in one environment before sign-off. Do not maintain duplicate booking, listing, auth or financial models between workstreams.
 
-A phase closes only after its required checks pass, manual validation is recorded, and handoff is current. Independent foundations may proceed while unrelated parameters remain pending; incomplete feature behaviour is not phase acceptance.
+A phase closes only when its implementation, current-phase tests, affected earlier regression, manual acceptance and handoff all pass. Unavailable endpoints/providers cannot be marked passed using unrelated mocks. P04 paid fixtures are a specifically documented boundary; P05 replaces this boundary with real sandbox payment and reruns the complete flow.
 
-Apply the confirmed outcome-specific fee rules; record actual processing charges and manual financial decisions with evidence. Do not reopen the confirmed 95% cancellation refund, 5% Pixlwave fee inclusive of Razorpay processing charges, clock origin, automatic expiry action or reservation timing. P11 requires all active launch gates satisfied and specific operational authorization for real money/public release.
+P07 first completes hardening and client acceptance, then conducts specifically authorized live transaction/release checks. Combining these activities into one phase does not allow release before either validation gate.
 
-If execution is interrupted during payment, refund, approval allocation or payout, reconcile persisted and provider state before retrying. Replayed jobs must not reset deadlines or double-reserve capacity. Manual external transactions need their own reconciliation evidence; the website cannot prevent transfers performed outside it. Never equate an application's record constraint with control of the bank account.
+Manual refunds and owner payouts remain manual. Restore/retry handling must reconcile external transaction evidence; application guards cannot control an admin's external bank account. Never treat restored pending tasks as authorization to repeat uncertain money movements.
 
-## Next action
+## Current state and next action
 
-Apply confirmed D05 cancellation allocation, D06 manual refunds, D08 manual verified payouts and D14 owner-defined service promises. Apply resolved D01 (192-hour notice and 168-hour cutoff), D06 (admin-determined partial-delivery refunds) and D07 (processing-charge-only deductions for rejection/owner failure), then validate operational/provider details in P00. Update the plan, decision register and affected handoffs together.
+Only planning documents, source references and test/handoff specifications exist. Application code, database migrations, deployments and provider configuration have not been implemented; application tests and client acceptance have not run.
+
+Begin P01's scope/design and foundation/accounts work using current accepted rules. Existing business answers remain accepted; technical/provider choices are completed in their assigned phases. Update the plan, decision register and relevant handoff together when implementation changes an interface or requirement.
 
 ## Revision note
 
-v0.7 replaces all earlier phase specifications affected by admin-mediated upfront payment, seven-day automatic rejection and manual refund tasks, 5% cancellation fee, approval-only reservations and fixed admin-controlled pricing. Historical versions remain described in the plan/decision history; they are not active requirements.
+v0.9 retains the seven-phase structure and corrects cross-phase ownership and fixture boundaries. P01 specifies downstream rules; P02/P03/P05 label downstream-dependent domain fixtures and require integrated reruns; P06 uses a chronologically valid cancellation-then-service test. The [migration map](docs/phase-mapping.md) and [archived handoffs](docs/archive/v0.7-handoffs/README.md) retain history. No feature, requirement or validation scenario was removed.

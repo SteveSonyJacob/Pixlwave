@@ -1,4 +1,6 @@
-# P01 handoff - Engineering foundation
+> HISTORICAL v0.7 HANDOFF - superseded by the seven-phase v0.8 plan. Do not implement from this file or treat its phase/test IDs as current. Use [current phase mapping](../../phase-mapping.md) and [active handoffs](../../../handoff.md). Original test descriptions below are retained for provenance; relative source links were adjusted for this archive.
+
+# P03 handoff - Inventory, owner base prices, and media
 
 Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
@@ -8,13 +10,13 @@ Manual acceptance: NOT REVIEWED
 
 ## Context and current authority
 
-Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
+Read [the plan](../../../plan.md), [handoff guide](../../../handoff.md) and [decision register](../../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R01, R17.  
-Dependencies: P00 architecture direction; independent scaffolding may proceed while unrelated values remain gated.  
-Decision gates: D10 Indian data/compute verification; D12 sizes/budget; D16 map provider checks.
+Requirements: R03-R07, R10, R18.  
+Dependencies: P02.  
+Decision gates: D03 custom-route policy accepted; D04 initial price publication details; D14 media/slot limits; D16 Mappls verification.
 
-Previous phase: [P00 - Scope, admin workflow, and design](P00-scope-design.md).
+Previous phase: [P02 - Authentication and role permissions](P02-auth-roles.md).
 
 Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
@@ -28,22 +30,26 @@ Current workflow: one upfront cart payment; admin coordinates/decides within sev
 
 ## Planned deliverables
 
-- [ ] Scaffold Next.js/TypeScript with reusable UI, clear business modules, configuration validation, supported pinned dependencies and documented local setup.
-- [ ] Establish PostgreSQL/Supabase migrations, worker/outbox, durable jobs, structured redacted logs, health checks, fixtures and CI.
-- [ ] Separate local/test/staging/production configuration and secret handling; select Indian compute/database/storage/backup/log destinations.
-- [ ] Create adapter boundaries for Razorpay, maps, SMTP, SMS and object storage; isolate provider place IDs from first-party listing coordinates.
-- [ ] Establish booking, payment, admin decision, refund, fulfillment and settlement as separate records and state transitions.
+- [ ] Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
+- [ ] Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication; snapshot them on paid bookings.
+- [ ] Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
+- [ ] Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
+- [ ] Implement creative/evidence upload foundations: file type/size checks, scan/quarantine, safe preview, private access, expiring downloads and retention controls. Preserve booked commitments when inventory changes.
+
+- [ ] Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
 
 ## Planned testing and validation
 
-- [ ] P01-T01: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
-- [ ] P01-T02: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
-- [ ] P01-T03: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
-- [ ] P01-T04: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
+- [ ] P03-T01: Verify draft/verified/published access; require admin approval of owner-specified ad duration, plays per show/day and operating hours. Reject invalid service values and prove owner API edits cannot change published price or paid service commitments.
+- [ ] P03-T02: Test show and rotating-slot capacity, blackout overlap and the no-other-approved-bookings custom-route condition across overlapping vehicle dates.
+- [ ] P03-T03: Reject spoofed/corrupt/oversized uploads and unauthorized downloads; verify scanning, expiring links and safe preview.
+- [ ] P03-T04: Check representative Kerala address/pin accuracy, provider failures and price audit history; reject capacity/route edits conflicting with committed service.
 
-Manual acceptance scenario: Reviewer follows setup instructions and opens the application shell and representative fixtures.
+- [ ] P03-T05: Validate duration, plays and operating hours against available service capacity; preserve paid service terms across listing edits and reject incompatible creative metadata before checkout.
 
-Exit gate: Reproducible foundation, CI and recovery/setup documentation work.
+Manual acceptance scenario: Owner creates one listing of each category; admin verifies it, records discussion and changes a rate; review uploads and map coordinates.
+
+Exit gate: All categories, owner base input, protected admin price updates and secure media are reviewable.
 
 ## Actual implementation record
 
@@ -70,10 +76,11 @@ These are unexecuted checks, not completed results.
 
 | Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
-| P01-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
 | Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
 
 Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
@@ -97,7 +104,7 @@ During implementation, record defects with severity, reproduction, affected requ
 
 ## Next-phase handoff
 
-Next: [P02 - Authentication and role permissions](P02-auth-roles.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
+Next: [P04 - Discovery and admin-controlled pricing](P04-discovery-pricing.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
 Before transfer:
 - [ ] Delivered scope and actual revision documented.
