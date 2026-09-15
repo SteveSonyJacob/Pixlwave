@@ -1,50 +1,54 @@
-# P07 handoff - Grouped checkout and financial ledger
+# P07 handoff - Upfront grouped payment and rejection refunds
 
-Updated: 2026-09-14  
+Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
-## Purpose and context
+## Context and current authority
 
-Grouped checkout and financial ledger is one development phase in [the master plan](../../plan.md). Read [the handoff guide](../../handoff.md) and [the decision register](../decisions.md) before beginning.
+Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R08, R11, R12, R15.  
-Dependencies: P05, P06; accepted pricing/financial contracts.  
-Decision gates: D07 fee/commission basis; D13 Razorpay account capability; D15 receipt/tax scope; D01-D02 deadline semantics.
+Requirements: R11, R12, R15, R16.  
+Dependencies: P05-P06; real payment now activates the domain review queue.  
+Decision gates: D07 confirmed outcome-specific deductions; D13 Razorpay; D15 receipt scope; D02 payment-success anchor and D17 unreserved paid-pending requests are confirmed.
 
-Previous phase: [P06 - Notifications and support tickets](P06-notifications-support.md). Verify its actual exit evidence before relying on its outputs.
+Previous phase: [P06 - Notifications, admin reminders, and support](P06-notifications-support.md).
 
-## Inputs to verify
+Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
-- [ ] Current repository state and applicable local instructions inspected.
-- [ ] Confirmed requirements and pending decision IDs read.
-- [ ] Prior phase dependencies and required test evidence verified.
-- [ ] Relevant client answers recorded; proposals not mistaken for accepted policies.
-- [ ] Needed configuration/provider access is available, with secret values kept outside documentation.
-- [ ] Implemented scope and planned review are agreed for this phase.
+## Entry checklist
+
+- [ ] Repository/local instructions and current accepted decisions read.
+- [ ] Prior-phase actual evidence and required inputs verified.
+- [ ] Relevant unanswered parameters resolved; accepted policies are not reopened.
+- [ ] Provider/configuration prerequisites recorded without secrets.
+- [ ] Planned review fixtures, environment and implementation scope agreed.
 
 ## Planned deliverables
 
-- [ ] Create one server-priced Razorpay order for the accepted cart subtotal and expose supported UPI/card/net-banking checkout methods.
-- [ ] Freeze item allocations and 25% commission snapshots according to the accepted policy; represent all money in integer paise.
-- [ ] Implement verified webhooks, idempotent processing, an append-only financial journal, payment attempts, receipts, payment status, and provider reconciliation.
-- [ ] Treat browser success as provisional until verified; handle duplicate/late payments, abandoned checkout, expiry races, and paid-but-unreconciled states without double booking.
-- [ ] Add a separate tax calculation interface and future tax breakdown area; no invented GST calculation or GST invoice claim.
+- [ ] Create exactly one server-priced Razorpay order for the entire submitted cart, containing the summed value of all valid items before any booking decision. Store internal item allocations; do not create a separate checkout/order per item. Customer pays once through enabled UPI/card/net-banking methods.
+- [ ] Use verified captured payment/webhooks to atomically allocate the payment to all submitted booking lines and enter unreserved paid-awaiting-admin review. Set both seven-day clocks from verified payment success; confirmation/reservation occurs only after admin approval.
+- [ ] Persist integer-paise immutable ledger entries, price and 15% commission policy snapshots, attempts and receipts; pending funds are liabilities, not earned owner payouts.
+- [ ] Create an item-specific manual refund task on rejection. Provide admin processing/completion fields for amount, deductions, reference, evidence and time; admin marks refunded after completing it. Deduplicate tasks and completion records, reconcile with actual transactions and prohibit automated refund API calls.
+- [ ] Handle missing callbacks, duplicate/out-of-order webhooks, extra successful attempts, allocation failure and late payment safely. Keep tax calculation modular and receipt naming accurate.
 
-## Planned tests and validation
+- [ ] Provide downloadable account-scoped payment receipts and completed-refund confirmations. Model one external refund transaction with balanced item allocations; record late/extra captures as manual exceptions without automatic refunds.
 
-These checks are specifications, not results. Fill the evidence table below after execution.
+## Planned testing and validation
 
-- [ ] P07-T01: Run mixed-owner/mixed-category cart payments and verify accepted items only, exact allocation totals, rounding, and one payment confirming all included bookings atomically.
-- [ ] P07-T02: Test tampered totals, forged/replayed/out-of-order webhooks, multiple clicks, multiple successful attempts, and lost callback/webhook delivery.
-- [ ] P07-T03: Test payment arriving exactly at/after the deadline, worker failure, provider timeout, and held inventory being unavailable; reconcile or refund safely under an explicit exception policy.
-- [ ] P07-T04: Verify receipt ownership, audit journal consistency, settlement ineligibility before completion, and notifications after confirmed payment.
+- [ ] P07-T01: Pay a multi-owner/multi-category cart before any decisions; prove captured total equals all paid lines and exactly one submission enters admin review without reserving inventory; delayed/replayed webhooks do not restart its seven-day clocks.
+- [ ] P07-T02: Accept one item, reject another and expire a still-undecided item at day seven; assert refund tasks appear without a refund API call. Record a manually completed sandbox refund and reconcile its item amount/reference. Test duplicate tasks/references, incomplete completion data, unauthorized edits and failed or uncertain external outcomes.
+- [ ] P07-T03: Test forged signatures, manipulated totals, repeated clicks, duplicate captures, lost webhooks, provider timeout and concurrent payment/rejection/cancellation events.
+- [ ] P07-T04: Verify failed payments create no funded review/confirmed booking, and payment success never equals admin approval or owner settlement. For completed Rs 10,000 service, assert Rs 8,500 owner and Rs 1,500 gross Pixlwave commission with gateway costs charged only against the latter.
 
-Manual acceptance scenario: Complete sandbox checkout for a cart with accepted and rejected items, inspect customer receipt and admin allocation ledger, then reproduce failed payment.
+- [ ] P07-T05: Verify one gateway order for a mixed cart, immutable receipt totals and authorized downloads; record one manual partial/grouped refund and reconcile its allocation without counting the transaction multiple times.
+- [ ] P07-T06: Expire a checkout across an IST date boundary and deliver a late capture/webhook: preserve captured money, avoid restarting deadlines or confirming an ineligible booking, and create a manual exception task. Test valid price snapshots when an admin changes rates.
 
-Exit gate: Sandbox payment and reconciliation evidence passes; no live checkout until P11 authorization and provider readiness.
+Manual acceptance scenario: Sandbox-pay a cart upfront, accept/reject items as admin and inspect the customer's payment receipt, item refunds and financial ledger.
+
+Exit gate: Real sandbox checkout, funded admin submission and rejected-item refund/reconciliation evidence passes. Live money remains a P11 gate.
 
 ## Actual implementation record
 
@@ -67,66 +71,51 @@ Do not paste access tokens, OTPs, personal details, bank credentials, or secret 
 
 ## Validation evidence
 
-| Check | Tested revision / environment | Command or steps | Expected result | Actual result | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| P07-T01 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P07-T02 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P07-T03 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P07-T04 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| Manual review | Not available | Run the acceptance scenario above | User/client accepts delivered behaviour | Not reviewed | None | NOT REVIEWED |
+These are unexecuted checks, not completed results.
 
-For each executed check record date/time, precise command or manual steps, data fixtures, browser/device when applicable, and links to relevant reports/screenshots/traces. Capture failures as well as passes.
+| Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| P07-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P07-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P07-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P07-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P07-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P07-T06 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
+
+Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
 
 ## Manual sign-off
 
-- Reviewer: NOT ASSIGNED.
-- Date: NOT REVIEWED.
-- Revision/environment reviewed: NOT AVAILABLE.
+- Reviewer/date: NOT ASSIGNED / NOT REVIEWED.
+- Revision/environment: NOT AVAILABLE.
 - Feedback: NOT RECORDED.
 - Decision: NOT APPROVED.
-- Follow-up actions: NOT RECORDED.
+- Required follow-up: NOT RECORDED.
 
-## Known issues, dependencies, and scope changes
+## Issues and operations
 
-| Item | Impact | Owner | Required resolution | State |
+| Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| Open policy/provider gates | See decision gates above | User/client for policies; developer for technical verification | Record accepted answers and validate implementation | OPEN |
-| Implementation absent | No phase behaviour is available | Future phase developer | Complete planned deliverables | NOT STARTED |
+| Remaining phase gates | See decision gates above | Client for policy; developer for verification | Resolve accepted parameter/provider requirements | OPEN |
+| No implementation | Phase features not delivered | Future developer | Complete scope and validation | NOT STARTED |
 
-Add actual defects with severity, reproduction, affected requirements, workaround if any, and whether the next phase is blocked. A temporary mock or disabled capability is a limitation, not a completed integration. Do not remove an unresolved policy merely to close this phase.
+During implementation, record defects with severity, reproduction, affected requirements and next-phase impact. Add setup/configuration, migration recovery, alerts, expiry jobs and manual refund queues, retries, money reconciliation, provider escalation, retention and costs as applicable. Current operational state: NOT IMPLEMENTED.
 
-## Operational handoff
+## Next-phase handoff
 
-Record the following when applicable:
-- Alerts and operational dashboards introduced.
-- Scheduled jobs, deadlines, idempotency keys, and retry/reconciliation responsibilities.
-- Audit events and retention/cleanup configuration.
-- Backup or migration recovery evidence.
-- Provider failure modes and support/escalation path.
-- Cost/capacity changes from this phase.
-- Outstanding financial or reservation exceptions requiring reconciliation.
+Next: [P08 - Fulfillment, seven-day cancellation, and refunds](P08-campaigns-refunds.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
-Current state: NOT IMPLEMENTED.
-
-## Next-phase instructions
-
-P08: operate paid campaigns, collect evidence, and handle approved changes/refunds.
-
-Next record: [P08 - Campaign changes, evidence, and refunds](P08-campaigns-refunds.md).
-
-Before transferring work:
-- [ ] This file reflects actual code and deployed revision.
-- [ ] Required tests pass with evidence; blocked checks are not labelled passed.
-- [ ] Manual validation is recorded.
-- [ ] Relevant decisions are accepted and reflected in the master plan.
-- [ ] Known issues and operational recovery instructions are documented.
-- [ ] The next phase has the schema/contracts/configuration and fixtures it needs.
-
-Next concrete action at draft creation: resolve the relevant decision gates and verify dependencies; this phase is not authorized as completed by the existence of this file.
+Before transfer:
+- [ ] Delivered scope and actual revision documented.
+- [ ] Required checks passed with evidence; exceptions explicitly recorded.
+- [ ] User/client manual review recorded.
+- [ ] Accepted decisions reflected in the plan and register.
+- [ ] Recovery/operations and next actions are reproducible.
 
 ## Change history
 
-| Date | Change | Author/source |
+| Date | Revision | Change |
 | --- | --- | --- |
-| 2026-09-14 | Created phase-specific planning handoff with unexecuted validation checks. | User request to draft now and update after later answers. |
-
+| 2026-09-14 | Initial draft | Created phase template; no implementation/tests. |
+| 2026-09-14 | 0.4 | Rewrote planned scope/checks for latest admin-managed workflow and follow-up answers. Prior workflow specifications superseded; actual implementation remains absent. |

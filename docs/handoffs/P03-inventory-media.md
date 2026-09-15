@@ -1,50 +1,53 @@
-# P03 handoff - Inventory, moderation, and media
+# P03 handoff - Inventory, owner base prices, and media
 
-Updated: 2026-09-14  
+Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
-## Purpose and context
+## Context and current authority
 
-Inventory, moderation, and media is one development phase in [the master plan](../../plan.md). Read [the handoff guide](../../handoff.md) and [the decision register](../decisions.md) before beginning.
+Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
 Requirements: R03-R07, R10, R18.  
 Dependencies: P02.  
-Decision gates: D03 mobile route policy; D14 inventory/media limits; D10 storage residency.
+Decision gates: D03 custom-route policy accepted; D04 initial price publication details; D14 media/slot limits; D16 Mappls verification.
 
-Previous phase: [P02 - Authentication and account roles](P02-auth-roles.md). Verify its actual exit evidence before relying on its outputs.
+Previous phase: [P02 - Authentication and role permissions](P02-auth-roles.md).
 
-## Inputs to verify
+Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
-- [ ] Current repository state and applicable local instructions inspected.
-- [ ] Confirmed requirements and pending decision IDs read.
-- [ ] Prior phase dependencies and required test evidence verified.
-- [ ] Relevant client answers recorded; proposals not mistaken for accepted policies.
-- [ ] Needed configuration/provider access is available, with secret values kept outside documentation.
-- [ ] Implemented scope and planned review are agreed for this phase.
+## Entry checklist
+
+- [ ] Repository/local instructions and current accepted decisions read.
+- [ ] Prior-phase actual evidence and required inputs verified.
+- [ ] Relevant unanswered parameters resolved; accepted policies are not reopened.
+- [ ] Provider/configuration prerequisites recorded without secrets.
+- [ ] Planned review fixtures, environment and implementation scope agreed.
 
 ## Planned deliverables
 
-- [ ] Build owner CRUD and admin publish/reject/suspend workflows for LED screens, theatre auditoriums/shows/ad slots, and mobile vehicles/routes/rotating slots.
-- [ ] Store map coordinates, address/locality, imagery, dimensions/resolution, base price inputs, operating hours, capacity, ad duration/frequency, and owner-declared audience estimates with attribution.
-- [ ] Support calendars, maintenance/blackout dates, recurring shows with exceptions, and multiple vehicle inventory. Preserve previously agreed bookings when editing listings.
-- [ ] Implement private ad/evidence upload primitives and public listing image handling, file validation, scanning/quarantine, safe previews, authorized downloads, and retention controls.
-- [ ] Create clearly marked non-production fixtures for all categories and owner verification scenarios.
+- [ ] Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
+- [ ] Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication; snapshot them on paid bookings.
+- [ ] Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
+- [ ] Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
+- [ ] Implement creative/evidence upload foundations: file type/size checks, scan/quarantine, safe preview, private access, expiring downloads and retention controls. Preserve booked commitments when inventory changes.
 
-## Planned tests and validation
+- [ ] Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
 
-These checks are specifications, not results. Fill the evidence table below after execution.
+## Planned testing and validation
 
-- [ ] P03-T01: Check listing approval and suspension permissions, cross-owner edits, and exposure of draft/unverified listings.
-- [ ] P03-T02: Verify theatre show capacity and mobile slot/route representation; test recurring-calendar exceptions and overlapping blackout dates.
-- [ ] P03-T03: Reject spoofed file types, oversized/unsupported/corrupt files, and unauthorized downloads; verify expiring links and quarantine.
-- [ ] P03-T04: Ensure capacity reduction, vehicle reassignment, or listing deletion cannot silently invalidate existing commitments.
+- [ ] P03-T01: Verify draft/verified/published access; require admin approval of owner-specified ad duration, plays per show/day and operating hours. Reject invalid service values and prove owner API edits cannot change published price or paid service commitments.
+- [ ] P03-T02: Test show and rotating-slot capacity, blackout overlap and the no-other-approved-bookings custom-route condition across overlapping vehicle dates.
+- [ ] P03-T03: Reject spoofed/corrupt/oversized uploads and unauthorized downloads; verify scanning, expiring links and safe preview.
+- [ ] P03-T04: Check representative Kerala address/pin accuracy, provider failures and price audit history; reject capacity/route edits conflicting with committed service.
 
-Manual acceptance scenario: Create, review, publish, edit, and suspend one listing of each category; review image/video previews and location coordinates.
+- [ ] P03-T05: Validate duration, plays and operating hours against available service capacity; preserve paid service terms across listing edits and reject incompatible creative metadata before checkout.
 
-Exit gate: All three inventory types are accurately representable and access-controlled; unresolved resource semantics block the affected module.
+Manual acceptance scenario: Owner creates one listing of each category; admin verifies it, records discussion and changes a rate; review uploads and map coordinates.
+
+Exit gate: All categories, owner base input, protected admin price updates and secure media are reviewable.
 
 ## Actual implementation record
 
@@ -67,66 +70,50 @@ Do not paste access tokens, OTPs, personal details, bank credentials, or secret 
 
 ## Validation evidence
 
-| Check | Tested revision / environment | Command or steps | Expected result | Actual result | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| P03-T01 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P03-T02 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P03-T03 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P03-T04 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| Manual review | Not available | Run the acceptance scenario above | User/client accepts delivered behaviour | Not reviewed | None | NOT REVIEWED |
+These are unexecuted checks, not completed results.
 
-For each executed check record date/time, precise command or manual steps, data fixtures, browser/device when applicable, and links to relevant reports/screenshots/traces. Capture failures as well as passes.
+| Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| P03-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P03-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
+
+Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
 
 ## Manual sign-off
 
-- Reviewer: NOT ASSIGNED.
-- Date: NOT REVIEWED.
-- Revision/environment reviewed: NOT AVAILABLE.
+- Reviewer/date: NOT ASSIGNED / NOT REVIEWED.
+- Revision/environment: NOT AVAILABLE.
 - Feedback: NOT RECORDED.
 - Decision: NOT APPROVED.
-- Follow-up actions: NOT RECORDED.
+- Required follow-up: NOT RECORDED.
 
-## Known issues, dependencies, and scope changes
+## Issues and operations
 
-| Item | Impact | Owner | Required resolution | State |
+| Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| Open policy/provider gates | See decision gates above | User/client for policies; developer for technical verification | Record accepted answers and validate implementation | OPEN |
-| Implementation absent | No phase behaviour is available | Future phase developer | Complete planned deliverables | NOT STARTED |
+| Remaining phase gates | See decision gates above | Client for policy; developer for verification | Resolve accepted parameter/provider requirements | OPEN |
+| No implementation | Phase features not delivered | Future developer | Complete scope and validation | NOT STARTED |
 
-Add actual defects with severity, reproduction, affected requirements, workaround if any, and whether the next phase is blocked. A temporary mock or disabled capability is a limitation, not a completed integration. Do not remove an unresolved policy merely to close this phase.
+During implementation, record defects with severity, reproduction, affected requirements and next-phase impact. Add setup/configuration, migration recovery, alerts, expiry jobs and manual refund queues, retries, money reconciliation, provider escalation, retention and costs as applicable. Current operational state: NOT IMPLEMENTED.
 
-## Operational handoff
+## Next-phase handoff
 
-Record the following when applicable:
-- Alerts and operational dashboards introduced.
-- Scheduled jobs, deadlines, idempotency keys, and retry/reconciliation responsibilities.
-- Audit events and retention/cleanup configuration.
-- Backup or migration recovery evidence.
-- Provider failure modes and support/escalation path.
-- Cost/capacity changes from this phase.
-- Outstanding financial or reservation exceptions requiring reconciliation.
+Next: [P04 - Discovery and admin-controlled pricing](P04-discovery-pricing.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
-Current state: NOT IMPLEMENTED.
-
-## Next-phase instructions
-
-P04: connect approved inventory to public search and versioned quotes.
-
-Next record: [P04 - Public discovery and dynamic pricing](P04-discovery-pricing.md).
-
-Before transferring work:
-- [ ] This file reflects actual code and deployed revision.
-- [ ] Required tests pass with evidence; blocked checks are not labelled passed.
-- [ ] Manual validation is recorded.
-- [ ] Relevant decisions are accepted and reflected in the master plan.
-- [ ] Known issues and operational recovery instructions are documented.
-- [ ] The next phase has the schema/contracts/configuration and fixtures it needs.
-
-Next concrete action at draft creation: resolve the relevant decision gates and verify dependencies; this phase is not authorized as completed by the existence of this file.
+Before transfer:
+- [ ] Delivered scope and actual revision documented.
+- [ ] Required checks passed with evidence; exceptions explicitly recorded.
+- [ ] User/client manual review recorded.
+- [ ] Accepted decisions reflected in the plan and register.
+- [ ] Recovery/operations and next actions are reproducible.
 
 ## Change history
 
-| Date | Change | Author/source |
+| Date | Revision | Change |
 | --- | --- | --- |
-| 2026-09-14 | Created phase-specific planning handoff with unexecuted validation checks. | User request to draft now and update after later answers. |
-
+| 2026-09-14 | Initial draft | Created phase template; no implementation/tests. |
+| 2026-09-14 | 0.4 | Rewrote planned scope/checks for latest admin-managed workflow and follow-up answers. Prior workflow specifications superseded; actual implementation remains absent. |

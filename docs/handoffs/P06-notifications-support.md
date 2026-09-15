@@ -1,49 +1,53 @@
-# P06 handoff - Notifications and support tickets
+# P06 handoff - Notifications, admin reminders, and support
 
-Updated: 2026-09-14  
+Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
-## Purpose and context
+## Context and current authority
 
-Notifications and support tickets is one development phase in [the master plan](../../plan.md). Read [the handoff guide](../../handoff.md) and [the decision register](../decisions.md) before beginning.
+Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R02, R16.  
-Dependencies: P05 lifecycle events and P02 identities.  
-Decision gates: D09 provider/sender selection; D10 provider processing scope.
+Requirements: R16, R02.  
+Dependencies: P05 event contracts and P02 identities; real payment triggers connected in P07.  
+Decision gates: D09 delivery providers; D01 confirmed 192-hour notice / 168-hour cutoff. Payment-origin deadlines, automatic rejection and manual refund task creation are confirmed.
 
-Previous phase: [P05 - Requests, reservations, and grouped cart](P05-booking-cart.md). Verify its actual exit evidence before relying on its outputs.
+Previous phase: [P05 - Cart, capacity, and admin review domain](P05-booking-cart.md).
 
-## Inputs to verify
+Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
-- [ ] Current repository state and applicable local instructions inspected.
-- [ ] Confirmed requirements and pending decision IDs read.
-- [ ] Prior phase dependencies and required test evidence verified.
-- [ ] Relevant client answers recorded; proposals not mistaken for accepted policies.
-- [ ] Needed configuration/provider access is available, with secret values kept outside documentation.
-- [ ] Implemented scope and planned review are agreed for this phase.
+## Entry checklist
+
+- [ ] Repository/local instructions and current accepted decisions read.
+- [ ] Prior-phase actual evidence and required inputs verified.
+- [ ] Relevant unanswered parameters resolved; accepted policies are not reopened.
+- [ ] Provider/configuration prerequisites recorded without secrets.
+- [ ] Planned review fixtures, environment and implementation scope agreed.
 
 ## Planned deliverables
 
-- [ ] Deliver required booking, approval, payment-deadline, campaign, and ticket updates through in-app, email, and SMS channels.
-- [ ] Use persisted events, deduplication, retry/backoff, delivery status, failure visibility, and server-side deadlines; notification failure never extends a booking deadline.
-- [ ] Implement advertiser/owner tickets linked to bookings, attachments, admin replies, status, and internal notes hidden from customers.
-- [ ] Configure domain authentication and required SMS provider onboarding/templates. Reuse providers for auth and business messages where suitable, while keeping the flows distinct.
+- [ ] Deliver payment-received, admin-review, acceptance/rejection, cancellation, refund, fulfillment and support events through in-app/email/SMS as appropriate to role.
+- [ ] Send admin deadline reminders and notifications for deadline rejection and pending manual refunds at seven days. Show actual advertiser cancellation eligibility and refund status.
+- [ ] Use durable outbox delivery, idempotency, retry/backoff, bounce/failure tracking and accurate links; notification delays never silently extend eligibility.
+- [ ] Implement booking-linked support tickets, attachments, admin replies and private internal notes. Customer requests and creatives are not automatically forwarded to owners.
+- [ ] Use ordinary Gmail/other recipient delivery with configured SMTP/SMS providers; no waiting-to-pay or 48-hour countdown campaigns.
 
-## Planned tests and validation
+- [ ] Use ticket states open/in-progress/resolved/closed with audited replies and private notes; show notification delivery status separately from booking state. Scheduled-start notices never claim verified playback.
 
-These checks are specifications, not results. Fill the evidence table below after execution.
+## Planned testing and validation
 
-- [ ] P06-T01: Check event-to-recipient/channel mapping, duplicate events, bounced email, SMS failures, provider timeouts, and worker recovery.
-- [ ] P06-T02: Verify notification content, IST deadline display, links, and sensitive-data redaction.
-- [ ] P06-T03: Attempt cross-account ticket access and internal-note disclosure; test safe attachments and support status transitions.
-- [ ] P06-T04: Verify actual delivery with provider test accounts and permitted recipient devices; record any blocked external checks.
+- [ ] P06-T01: Check recipient/channel routing and confirm owners receive neither raw booking requests nor customer/admin private notes.
+- [ ] P06-T02: Test duplicate events, email bounce, SMS timeout and worker recovery without lost/duplicate business actions.
+- [ ] P06-T03: Verify IST timestamps, admin due/overdue reminders, paid-awaiting-review wording and notifications after actual refund outcome.
+- [ ] P06-T04: Attempt cross-account ticket/media access; receive real provider test messages and record any blocked external validation.
 
-Manual acceptance scenario: Receive a booking approval and deadline reminder on website/email/SMS; open and resolve a ticket across user/admin accounts.
+- [ ] P06-T05: Start a scheduled campaign window with no evidence: notify only its scheduled status, never observed playback or verified completion. Confirm resolved tickets retain authorized reply history and private notes stay private.
 
-Exit gate: Required notifications and support workflows pass, with provider prerequisites and test evidence recorded.
+Manual acceptance scenario: Receive paid/request-decision/refund notices, review an admin due alert and resolve a ticket using separate accounts.
+
+Exit gate: Required event delivery and support are correct; provider-backed delivery evidence is recorded.
 
 ## Actual implementation record
 
@@ -66,66 +70,50 @@ Do not paste access tokens, OTPs, personal details, bank credentials, or secret 
 
 ## Validation evidence
 
-| Check | Tested revision / environment | Command or steps | Expected result | Actual result | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| P06-T01 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P06-T02 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P06-T03 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P06-T04 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| Manual review | Not available | Run the acceptance scenario above | User/client accepts delivered behaviour | Not reviewed | None | NOT REVIEWED |
+These are unexecuted checks, not completed results.
 
-For each executed check record date/time, precise command or manual steps, data fixtures, browser/device when applicable, and links to relevant reports/screenshots/traces. Capture failures as well as passes.
+| Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| P06-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P06-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P06-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P06-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P06-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
+
+Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
 
 ## Manual sign-off
 
-- Reviewer: NOT ASSIGNED.
-- Date: NOT REVIEWED.
-- Revision/environment reviewed: NOT AVAILABLE.
+- Reviewer/date: NOT ASSIGNED / NOT REVIEWED.
+- Revision/environment: NOT AVAILABLE.
 - Feedback: NOT RECORDED.
 - Decision: NOT APPROVED.
-- Follow-up actions: NOT RECORDED.
+- Required follow-up: NOT RECORDED.
 
-## Known issues, dependencies, and scope changes
+## Issues and operations
 
-| Item | Impact | Owner | Required resolution | State |
+| Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| Open policy/provider gates | See decision gates above | User/client for policies; developer for technical verification | Record accepted answers and validate implementation | OPEN |
-| Implementation absent | No phase behaviour is available | Future phase developer | Complete planned deliverables | NOT STARTED |
+| Remaining phase gates | See decision gates above | Client for policy; developer for verification | Resolve accepted parameter/provider requirements | OPEN |
+| No implementation | Phase features not delivered | Future developer | Complete scope and validation | NOT STARTED |
 
-Add actual defects with severity, reproduction, affected requirements, workaround if any, and whether the next phase is blocked. A temporary mock or disabled capability is a limitation, not a completed integration. Do not remove an unresolved policy merely to close this phase.
+During implementation, record defects with severity, reproduction, affected requirements and next-phase impact. Add setup/configuration, migration recovery, alerts, expiry jobs and manual refund queues, retries, money reconciliation, provider escalation, retention and costs as applicable. Current operational state: NOT IMPLEMENTED.
 
-## Operational handoff
+## Next-phase handoff
 
-Record the following when applicable:
-- Alerts and operational dashboards introduced.
-- Scheduled jobs, deadlines, idempotency keys, and retry/reconciliation responsibilities.
-- Audit events and retention/cleanup configuration.
-- Backup or migration recovery evidence.
-- Provider failure modes and support/escalation path.
-- Cost/capacity changes from this phase.
-- Outstanding financial or reservation exceptions requiring reconciliation.
+Next: [P07 - Upfront grouped payment and rejection refunds](P07-payments-ledger.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
-Current state: NOT IMPLEMENTED.
-
-## Next-phase instructions
-
-P07: collect one payment for accepted cart items and allocate the money reliably.
-
-Next record: [P07 - Grouped checkout and financial ledger](P07-payments-ledger.md).
-
-Before transferring work:
-- [ ] This file reflects actual code and deployed revision.
-- [ ] Required tests pass with evidence; blocked checks are not labelled passed.
-- [ ] Manual validation is recorded.
-- [ ] Relevant decisions are accepted and reflected in the master plan.
-- [ ] Known issues and operational recovery instructions are documented.
-- [ ] The next phase has the schema/contracts/configuration and fixtures it needs.
-
-Next concrete action at draft creation: resolve the relevant decision gates and verify dependencies; this phase is not authorized as completed by the existence of this file.
+Before transfer:
+- [ ] Delivered scope and actual revision documented.
+- [ ] Required checks passed with evidence; exceptions explicitly recorded.
+- [ ] User/client manual review recorded.
+- [ ] Accepted decisions reflected in the plan and register.
+- [ ] Recovery/operations and next actions are reproducible.
 
 ## Change history
 
-| Date | Change | Author/source |
+| Date | Revision | Change |
 | --- | --- | --- |
-| 2026-09-14 | Created phase-specific planning handoff with unexecuted validation checks. | User request to draft now and update after later answers. |
-
+| 2026-09-14 | Initial draft | Created phase template; no implementation/tests. |
+| 2026-09-14 | 0.4 | Rewrote planned scope/checks for latest admin-managed workflow and follow-up answers. Prior workflow specifications superseded; actual implementation remains absent. |

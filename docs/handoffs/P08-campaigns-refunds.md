@@ -1,50 +1,53 @@
-# P08 handoff - Campaign changes, evidence, and refunds
+# P08 handoff - Fulfillment, seven-day cancellation, and refunds
 
-Updated: 2026-09-14  
+Plan version: 0.7 draft. Updated: 2026-09-15.  
 Status: NOT STARTED  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
-## Purpose and context
+## Context and current authority
 
-Campaign changes, evidence, and refunds is one development phase in [the master plan](../../plan.md). Read [the handoff guide](../../handoff.md) and [the decision register](../decisions.md) before beginning.
+Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
 Requirements: R13, R14, R16.  
 Dependencies: P07.  
-Decision gates: D05 pause/fine policy; D06 cancellation/refund units; D08 completion/dispute rules; D14 evidence requirements.
+Decision gates: D05 confirmed cancellation allocation; D06 manual refund recording and exception details; D07 accounting verification; D08 payout review. Both seven-day clocks start at successful payment.
 
-Previous phase: [P07 - Grouped checkout and financial ledger](P07-payments-ledger.md). Verify its actual exit evidence before relying on its outputs.
+Previous phase: [P07 - Upfront grouped payment and rejection refunds](P07-payments-ledger.md).
 
-## Inputs to verify
+Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
-- [ ] Current repository state and applicable local instructions inspected.
-- [ ] Confirmed requirements and pending decision IDs read.
-- [ ] Prior phase dependencies and required test evidence verified.
-- [ ] Relevant client answers recorded; proposals not mistaken for accepted policies.
-- [ ] Needed configuration/provider access is available, with secret values kept outside documentation.
-- [ ] Implemented scope and planned review are agreed for this phase.
+## Entry checklist
+
+- [ ] Repository/local instructions and current accepted decisions read.
+- [ ] Prior-phase actual evidence and required inputs verified.
+- [ ] Relevant unanswered parameters resolved; accepted policies are not reopened.
+- [ ] Provider/configuration prerequisites recorded without secrets.
+- [ ] Planned review fixtures, environment and implementation scope agreed.
 
 ## Planned deliverables
 
-- [ ] Build campaign dashboards with truthful scheduled/owner-reported live/completed status; no assertion of verified physical playback from a calendar alone.
-- [ ] Implement approval-based extensions, creative replacements, pauses/resumption, and paid cancellations with approved capacity and price effects.
-- [ ] Collect owner photo/video evidence and advertiser disputes; give admin controlled completion/fraud/non-delivery decisions with reasons and audit history.
-- [ ] Implement full/partial refunds for undelivered units, approved fines and commission adjustments, 1-2-day admin review tracking, and separate gateway processing status.
-- [ ] Add compensating journal entries, item-level refund allocations, safe refund retries, and payout blocking while disputes/refunds are unresolved.
+- [ ] Build confirmed campaign schedules, owner service/evidence records and admin completion/non-delivery decisions. Scheduled/live-window notifications indicate dates only, never verified playback. Completion requires admin evidence verification; no physical playback control.
+- [ ] Allow advertiser cancellation only before successful payment + seven days. Refund 95% of the cancelled booking amount; allocate 5% to Pixlwave inclusive of Razorpay processing charges, with no separate processing deduction or added fulfillment commission. Preserve the request timestamp, queue the refund for admin and mark refunded only after admin records its completed payment reference.
+- [ ] Block ordinary cancellation/refund eligibility after the cutoff while retaining owner inability/non-delivery as the business exception. Preserve eligibility for timely requests whose manual processing completes later.
+- [ ] Refund undelivered daily units or theatre show/slot units at the booked rate; support partial delivery, evidence and admin decision reasons.
+- [ ] Remove pause/resume, campaign extensions and in-place rescheduling/change actions from scope. Later advertising dates use a separate booking. Keep fulfillment, refund and settlement status separate.
 
-## Planned tests and validation
+- [ ] Review unit-linked evidence before admin-verifying completion. Use booked prices for fully missed units; let admin manually determine partial-delivery refunds with a reason and evidence. Record applicable actual Razorpay charges separately, deduct them once and apply no owner-failure penalty.
 
-These checks are specifications, not results. Fill the evidence table below after execution.
+## Planned testing and validation
 
-- [ ] P08-T01: Test competing extension requests, rejected changes preserving original contracts, and payment-required extensions not becoming active prematurely.
-- [ ] P08-T02: Test partial delivery across dynamic-price days/shows, multiple cart owners, penalty caps, integer rounding, cumulative refund limits, and refunded commission treatment.
-- [ ] P08-T03: Test duplicate admin actions, failed/pending refund responses, reversal prerequisites, and concurrent refund versus settlement attempts.
-- [ ] P08-T04: Verify evidence authorization, fake/missing evidence review, advertiser disputes, and inability of owners to approve their own payout.
+- [ ] P08-T01: Test cancellation immediately before/at/after seven-day expiry, including an accepted booking and a timely cancellation manually processed after the cutoff. Assert eligibility is preserved and no automated refund occurs.
+- [ ] P08-T02: For manual rejection, deadline rejection and owner non-delivery after day seven, verify net refund equals the affected paid amount less applicable actual Razorpay processing charges. No 5% cancellation fee or other penalty applies; admin records manual completion and duplicate deductions are blocked.
+- [ ] P08-T03: Verify Rs 10,000 cancellation refunds Rs 9,500 and allocates Rs 500 to Pixlwave inclusive of processing charges, with no additional fee or owner payout on the cancelled amount. Test partial-cart allocation, paise rounding, cumulative refund limits, duplicate refunds, gateway failure and refund-versus-payout races.
+- [ ] P08-T04: Verify absence of pause/change endpoints, authorization on evidence, truthful fulfillment status and continued access to valid non-delivery claims without a 48-hour expiry.
 
-Manual acceptance scenario: Run completion with evidence, owner non-delivery, partial refund, advertiser cancellation, and accepted/rejected pause/extension scenarios.
+- [ ] P08-T05: Separate scheduled status, owner-reported completion and admin verification. For partial delivery, require an authorized admin-entered refund assessment, reason and unit-linked evidence; enforce remaining paid-value limits and audit changes without automatically calculating an hours/plays refund.
 
-Exit gate: All agreed campaign policies and refund accounting pass; review time is not displayed as guaranteed bank-credit time.
+Manual acceptance scenario: Run timely cancellation, rejected late cancellation, late owner non-delivery, partial refund and completion with evidence.
+
+Exit gate: Accepted seven-day rules and exception are enforced; refund execution and banking time are distinguished from eligibility.
 
 ## Actual implementation record
 
@@ -67,66 +70,50 @@ Do not paste access tokens, OTPs, personal details, bank credentials, or secret 
 
 ## Validation evidence
 
-| Check | Tested revision / environment | Command or steps | Expected result | Actual result | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| P08-T01 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P08-T02 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P08-T03 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P08-T04 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| Manual review | Not available | Run the acceptance scenario above | User/client accepts delivered behaviour | Not reviewed | None | NOT REVIEWED |
+These are unexecuted checks, not completed results.
 
-For each executed check record date/time, precise command or manual steps, data fixtures, browser/device when applicable, and links to relevant reports/screenshots/traces. Capture failures as well as passes.
+| Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| P08-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P08-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P08-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P08-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P08-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
+
+Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
 
 ## Manual sign-off
 
-- Reviewer: NOT ASSIGNED.
-- Date: NOT REVIEWED.
-- Revision/environment reviewed: NOT AVAILABLE.
+- Reviewer/date: NOT ASSIGNED / NOT REVIEWED.
+- Revision/environment: NOT AVAILABLE.
 - Feedback: NOT RECORDED.
 - Decision: NOT APPROVED.
-- Follow-up actions: NOT RECORDED.
+- Required follow-up: NOT RECORDED.
 
-## Known issues, dependencies, and scope changes
+## Issues and operations
 
-| Item | Impact | Owner | Required resolution | State |
+| Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| Open policy/provider gates | See decision gates above | User/client for policies; developer for technical verification | Record accepted answers and validate implementation | OPEN |
-| Implementation absent | No phase behaviour is available | Future phase developer | Complete planned deliverables | NOT STARTED |
+| Remaining phase gates | See decision gates above | Client for policy; developer for verification | Resolve accepted parameter/provider requirements | OPEN |
+| No implementation | Phase features not delivered | Future developer | Complete scope and validation | NOT STARTED |
 
-Add actual defects with severity, reproduction, affected requirements, workaround if any, and whether the next phase is blocked. A temporary mock or disabled capability is a limitation, not a completed integration. Do not remove an unresolved policy merely to close this phase.
+During implementation, record defects with severity, reproduction, affected requirements and next-phase impact. Add setup/configuration, migration recovery, alerts, expiry jobs and manual refund queues, retries, money reconciliation, provider escalation, retention and costs as applicable. Current operational state: NOT IMPLEMENTED.
 
-## Operational handoff
+## Next-phase handoff
 
-Record the following when applicable:
-- Alerts and operational dashboards introduced.
-- Scheduled jobs, deadlines, idempotency keys, and retry/reconciliation responsibilities.
-- Audit events and retention/cleanup configuration.
-- Backup or migration recovery evidence.
-- Provider failure modes and support/escalation path.
-- Cost/capacity changes from this phase.
-- Outstanding financial or reservation exceptions requiring reconciliation.
+Next: [P09 - Owner settlement and admin finance](P09-settlements-admin.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
-Current state: NOT IMPLEMENTED.
-
-## Next-phase instructions
-
-P09: release only reconciled eligible balances and complete the admin finance workspace.
-
-Next record: [P09 - Owner settlement and admin operations](P09-settlements-admin.md).
-
-Before transferring work:
-- [ ] This file reflects actual code and deployed revision.
-- [ ] Required tests pass with evidence; blocked checks are not labelled passed.
-- [ ] Manual validation is recorded.
-- [ ] Relevant decisions are accepted and reflected in the master plan.
-- [ ] Known issues and operational recovery instructions are documented.
-- [ ] The next phase has the schema/contracts/configuration and fixtures it needs.
-
-Next concrete action at draft creation: resolve the relevant decision gates and verify dependencies; this phase is not authorized as completed by the existence of this file.
+Before transfer:
+- [ ] Delivered scope and actual revision documented.
+- [ ] Required checks passed with evidence; exceptions explicitly recorded.
+- [ ] User/client manual review recorded.
+- [ ] Accepted decisions reflected in the plan and register.
+- [ ] Recovery/operations and next actions are reproducible.
 
 ## Change history
 
-| Date | Change | Author/source |
+| Date | Revision | Change |
 | --- | --- | --- |
-| 2026-09-14 | Created phase-specific planning handoff with unexecuted validation checks. | User request to draft now and update after later answers. |
-
+| 2026-09-14 | Initial draft | Created phase template; no implementation/tests. |
+| 2026-09-14 | 0.4 | Rewrote planned scope/checks for latest admin-managed workflow and follow-up answers. Prior workflow specifications superseded; actual implementation remains absent. |

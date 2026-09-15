@@ -1,50 +1,49 @@
-# P00 handoff - Scope, policies, and design
+# P00 handoff - Scope, admin workflow, and design
 
-Updated: 2026-09-14  
-Status: DRAFT / AWAITING DECISIONS  
+Plan version: 0.7 draft. Updated: 2026-09-15.  
+Status: DRAFT / AWAITING REMAINING DETAILS  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
 
-## Purpose and context
+## Context and current authority
 
-Scope, policies, and design is one development phase in [the master plan](../../plan.md). Read [the handoff guide](../../handoff.md) and [the decision register](../decisions.md) before beginning.
+Read [the plan](../../plan.md), [handoff guide](../../handoff.md) and [decision register](../decisions.md). This v0.7 specification replaces earlier workflow assumptions; previous tests were never run. Review [blueprint coverage and resolved answers](../requirements-review.md) and plan sections 3.6-3.8 before implementing checkout, media or money records.
 
-Requirements: R01, R09, R18.  
-Dependencies: None; this draft is the starting input.  
-Decision gates: D01-D15: resolve structural rules now; explicitly schedule remaining parameter/provider decisions before affected phase acceptance.
+Requirements: R01, R08-R15, R18.  
+Dependencies: Source documents and latest client clarification.  
+Decision gates: D01 confirmed 192-hour notice / 168-hour cutoff; D05 confirmed cancellation allocation; D06 manual refund workflow; D07 confirmed outcome-specific deductions; D08 release details. Payment-origin seven-day clocks, automatic rejection, manual refund task creation and approval-only reservation are settled.
 
-Starting phase: the PDF, UI references, user clarifications, and planning draft are inputs. No implementation exists.
+Starting inputs: latest client answers, source blueprint, UI references and current planning draft.
 
-## Inputs to verify
+Current workflow: one upfront cart payment; admin coordinates/decides within seven days of payment; paid-pending items reserve nothing; admin approval alone reserves. Undecided requests automatically reject at day seven and create refund tasks. Admin performs every refund manually and marks it refunded only after completion; no automatic money movement. Advertiser cancellation within seven days refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, with no additional processing deduction or fulfillment commission. Later business refunds are limited to owner inability/non-delivery. Owner initial base price and admin-only published-price revisions replace automatic pricing. No pause/change flows or fixed completion countdown. Admin transfers owner funds manually after verification; completed service pays 85% to the owner and Razorpay charges come out of Pixlwave's 15%. Owners specify ad duration, plays per show/day and operating hours for admin approval. Notice is exactly 192 hours from successful payment; review/cancellation closes at 168 hours. Rejection/owner-failure refunds deduct only actual applicable Razorpay processing charges, with no penalty. Admin determines partial-delivery refund amounts manually.
 
-- [ ] Current repository state and applicable local instructions inspected.
-- [ ] Confirmed requirements and pending decision IDs read.
-- [ ] Prior phase dependencies and required test evidence verified.
-- [ ] Relevant client answers recorded; proposals not mistaken for accepted policies.
-- [ ] Needed configuration/provider access is available, with secret values kept outside documentation.
-- [ ] Implemented scope and planned review are agreed for this phase.
+## Entry checklist
+
+- [ ] Repository/local instructions and current accepted decisions read.
+- [ ] Prior-phase actual evidence and required inputs verified.
+- [ ] Relevant unanswered parameters resolved; accepted policies are not reopened.
+- [ ] Provider/configuration prerequisites recorded without secrets.
+- [ ] Planned review fixtures, environment and implementation scope agreed.
 
 ## Planned deliverables
 
-- [ ] Approve the requirements traceability, glossary, role/permission matrix, and the distinction between campaign, booking, submitted cart, payment, and settlement.
-- [ ] Specify LED day exclusivity, theatre show/slot capacity, and mobile vehicle/slot/route behaviour. Define quote and reservation contracts.
-- [ ] Resolve timing and batch-payment examples, refund/fine policy, completion evidence, and payout authority using the decision register.
-- [ ] Create responsive designs for public discovery, all three booking forms, cart decision tracking, advertiser/owner/admin dashboards, tickets, and error/empty states. Use the supplied references and replaceable branding.
-- [ ] Document media limits, required owner verification details, service providers, preliminary India-only deployment diagram, and proposed performance/cost targets.
+- [ ] Approve the admin-mediated workflow, permission matrix, charged-cart/item definitions, deadline examples and refund eligibility matrix.
+- [ ] Document price ownership: owner supplies the initial base price; only admin changes a published rate after owner discussion. Preserve booked-price history.
+- [ ] Review all three category forms, upfront checkout, paid-awaiting-admin status, admin coordination notes, advertiser cancellation, refund tracking and owner fulfillment screens.
+- [ ] Implement the confirmed 192-hour notice, 168-hour review/cancellation cutoff and owner non-delivery exception; use the successful-payment clock and verify deadline rejection creates a manual refund task without moving money.
+- [ ] Review reference-led responsive designs, provider/data plan, media requirements and estimated startup operating costs.
 
-## Planned tests and validation
+## Planned testing and validation
 
-These checks are specifications, not results. Fill the evidence table below after execution.
+- [ ] P00-T01: Walk through paid cart submission, manual admin-owner discussion and mixed item decisions without exposing requests to owner accounts.
+- [ ] P00-T02: Use dated IST examples to validate minimum notice and seven-day boundaries, including a day-seven rejection and a day-seven cancellation awaiting refund processing.
+- [ ] P00-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
+- [ ] P00-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
 
-- [ ] P00-T01: Walk through one LED booking, two advertisers sharing theatre slots, and mobile slots sharing a route; identify every resource reserved.
-- [ ] P00-T02: Tabletop the user's day-1/day-5/day-6 cart example and payment deadline on day 7; include one rejection, no response, withdrawal, and all-rejected cases.
-- [ ] P00-T03: Test policy examples for earliest booking date in IST, approval near campaign start, partial delivery, pause fine, refund rounding, and mixed-owner settlement.
-- [ ] P00-T04: Review every supplied PDF requirement against the requirement map; review mobile/desktop designs and remove unsupported instant-booking or trust claims.
+Manual acceptance scenario: Client reviews the new complete flow and designs; distinguish accepted rules from outstanding details.
 
-Manual acceptance scenario: User/client reviews workflows, visual direction, decision outcomes, and scope. Record accepted recommendations explicitly.
-
-Exit gate: Scope and designs approved; no unresolved structural contradiction is passed to booking, pricing, or money implementation. Deferred values have named gates.
+Exit gate: Core workflow and designs accepted; unresolved parameters have explicit gates rather than invented defaults.
 
 ## Actual implementation record
 
@@ -67,66 +66,49 @@ Do not paste access tokens, OTPs, personal details, bank credentials, or secret 
 
 ## Validation evidence
 
-| Check | Tested revision / environment | Command or steps | Expected result | Actual result | Evidence | Status |
-| --- | --- | --- | --- | --- | --- | --- |
-| P00-T01 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P00-T02 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P00-T03 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| P00-T04 | Not available | Define exact reproduction from planned check | As specified above | Not executed | None | NOT RUN |
-| Manual review | Not available | Run the acceptance scenario above | User/client accepts delivered behaviour | Not reviewed | None | NOT REVIEWED |
+These are unexecuted checks, not completed results.
 
-For each executed check record date/time, precise command or manual steps, data fixtures, browser/device when applicable, and links to relevant reports/screenshots/traces. Capture failures as well as passes.
+| Check | Revision/environment | Command or manual steps | Expected | Observed | Evidence | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| P00-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| P00-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
+| Manual review | Not available | Follow acceptance scenario | Client accepts behaviour | Not reviewed | None | NOT REVIEWED |
+
+Record execution date/time, fixture, role, browser/device and report/trace/screenshot path. Keep blocked or failing checks visible. A simulated funded fixture does not prove gateway integration.
 
 ## Manual sign-off
 
-- Reviewer: NOT ASSIGNED.
-- Date: NOT REVIEWED.
-- Revision/environment reviewed: NOT AVAILABLE.
+- Reviewer/date: NOT ASSIGNED / NOT REVIEWED.
+- Revision/environment: NOT AVAILABLE.
 - Feedback: NOT RECORDED.
 - Decision: NOT APPROVED.
-- Follow-up actions: NOT RECORDED.
+- Required follow-up: NOT RECORDED.
 
-## Known issues, dependencies, and scope changes
+## Issues and operations
 
-| Item | Impact | Owner | Required resolution | State |
+| Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| Open policy/provider gates | See decision gates above | User/client for policies; developer for technical verification | Record accepted answers and validate implementation | OPEN |
-| Implementation absent | No phase behaviour is available | Future phase developer | Complete planned deliverables | NOT STARTED |
+| Remaining phase gates | See decision gates above | Client for policy; developer for verification | Resolve accepted parameter/provider requirements | OPEN |
+| No implementation | Phase features not delivered | Future developer | Complete scope and validation | NOT STARTED |
 
-Add actual defects with severity, reproduction, affected requirements, workaround if any, and whether the next phase is blocked. A temporary mock or disabled capability is a limitation, not a completed integration. Do not remove an unresolved policy merely to close this phase.
+During implementation, record defects with severity, reproduction, affected requirements and next-phase impact. Add setup/configuration, migration recovery, alerts, expiry jobs and manual refund queues, retries, money reconciliation, provider escalation, retention and costs as applicable. Current operational state: NOT IMPLEMENTED.
 
-## Operational handoff
+## Next-phase handoff
 
-Record the following when applicable:
-- Alerts and operational dashboards introduced.
-- Scheduled jobs, deadlines, idempotency keys, and retry/reconciliation responsibilities.
-- Audit events and retention/cleanup configuration.
-- Backup or migration recovery evidence.
-- Provider failure modes and support/escalation path.
-- Cost/capacity changes from this phase.
-- Outstanding financial or reservation exceptions requiring reconciliation.
+Next: [P01 - Engineering foundation](P01-foundation.md). Deliver the schema/contracts, configuration references, fixtures and evidence it needs.
 
-Current state: NOT IMPLEMENTED.
-
-## Next-phase instructions
-
-P01: establish the repository, local setup, schema boundaries, and CI using the accepted architecture.
-
-Next record: [P01 - Engineering foundation](P01-foundation.md).
-
-Before transferring work:
-- [ ] This file reflects actual code and deployed revision.
-- [ ] Required tests pass with evidence; blocked checks are not labelled passed.
-- [ ] Manual validation is recorded.
-- [ ] Relevant decisions are accepted and reflected in the master plan.
-- [ ] Known issues and operational recovery instructions are documented.
-- [ ] The next phase has the schema/contracts/configuration and fixtures it needs.
-
-Next concrete action at draft creation: resolve the relevant decision gates and verify dependencies; this phase is not authorized as completed by the existence of this file.
+Before transfer:
+- [ ] Delivered scope and actual revision documented.
+- [ ] Required checks passed with evidence; exceptions explicitly recorded.
+- [ ] User/client manual review recorded.
+- [ ] Accepted decisions reflected in the plan and register.
+- [ ] Recovery/operations and next actions are reproducible.
 
 ## Change history
 
-| Date | Change | Author/source |
+| Date | Revision | Change |
 | --- | --- | --- |
-| 2026-09-14 | Created phase-specific planning handoff with unexecuted validation checks. | User request to draft now and update after later answers. |
-
+| 2026-09-14 | Initial draft | Created phase template; no implementation/tests. |
+| 2026-09-14 | 0.4 | Rewrote planned scope/checks for latest admin-managed workflow and follow-up answers. Prior workflow specifications superseded; actual implementation remains absent. |

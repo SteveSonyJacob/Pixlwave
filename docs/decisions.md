@@ -1,56 +1,92 @@
 # Pixlwave decision register
 
-Status: DRAFT - awaiting user/client answers. Updated: 2026-09-14.
+Version: 0.7 draft. Updated: 2026-09-15.
+Source: latest client workflow clarification and subsequent user answers, including exact 192/168-hour timing, admin-determined partial refunds and the final processing-charge-only rule for rejection/owner failure.
 
-The user authorized drafting the plan before answering the remaining questions. A recommendation in this register is not an accepted business rule. No pending question is resolved by elapsed time or by starting development.
+## Current authority
 
-## How to update
+The latest client rules supersede conflicting earlier answers, the frontend blueprint, and previous plan versions. The user authorized maintaining the draft while unanswered details remain. A PARTIAL status reopens only the named details, not the accepted rule.
 
-Record the answer, source/date, impacted requirements, implementation phases, and tests. Update `plan.md` and affected handoffs together. Retain prior decisions as superseded rather than silently rewriting implemented financial rules. If implementation already exists, assess migration, existing-contract treatment, regression tests, and deployment implications.
+Current model: advertiser pays for the whole cart at submission; admin manually coordinates with owners and decides each request within seven days of successful payment. Paid requests do not reserve inventory. Only admin approval reserves capacity. Advertiser cancellation within the same seven-day period refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, without an additional processing deduction. Ordinary refund eligibility ends at seven days; owner inability/non-delivery is the business exception. Admin controls published price changes after discussing with the owner. There is no dynamic pricing or pause/change workflow.
 
-## Pending decisions
+## Decision status
 
-| ID | Question and confirmed context | Proposed approach, not yet approved | Blocks final acceptance of |
-| --- | --- | --- | --- |
-| D01 | Upcoming eight days cannot be booked, but owners may take 8-10 days to respond. Which deadline wins? Does the eight-day rule mean calendar dates in IST or 192 elapsed hours? | Define exact earliest date with worked IST examples. Cart decision cutoff is the earlier of submission + 10 days or earliest screening - 48 hours; unanswered items expire. This leaves 24 hours to pay plus preparation time. Alternatively increase minimum notice. | P05 booking rules; P07 checkout deadlines; P11 launch |
-| D02 | What happens when an owner never responds, and may customers edit or withdraw items after submitting a cart? Approved items must stay reserved until all items are accepted/rejected. | Freeze submitted cart membership. Additions create a new cart. Allow withdrawal with reservation release; do not extend an existing payment deadline. Apply D01 cutoff and count expired/withdrawn items as terminal, subject to explicit approval of this extension to the stated accepted/rejected rule. | P05, P07 |
-| D03 | Shared mobile billboard slots can have an owner-defined route; custom routes are allowed only if the owner offers them. How are conflicting route requests handled? | Either custom routes require exclusive vehicle booking, or the first approved route fixes the route for all slots on those dates. User must select. Never independently promise conflicting routes on one vehicle. | P03 mobile inventory; P05 mobile reservations |
-| D04 | Dynamic pricing must reflect requests/bookings and may consider nearby inventory. Who sets base price, formula, bounds, geographic comparison, and quote-lock time? | Owner sets base price; administrator manages a versioned, bounded formula using qualified unique demand, confirmed utilization, and comparable local inventory. Freeze price at request submission until its payment deadline. Define locality, lookback, weights, update frequency, fallback, and anti-manipulation rules before acceptance. | P04 pricing; P05 quote contract; P07 charges |
-| D05 | Customers can pause with approval; a small fine is deducted from a refund. Does a pause release inventory, change dates, require a new booking to resume, or incur additional charges? | Keep policy configurable but do not invent behaviour or enable unresolved actions. Determine amount/percentage, cap, recipient, rounding, refundable base, and when it applies. | P08 pauses and refunds |
-| D06 | Paid bookings can be cancelled; admin reviews refunds in 1-2 days. What are cancellation cutoffs/penalties and refund units? Missed days must be refunded. | Refund only undelivered dated line items; for theatre use missed shows/slots if approved. No advertiser penalty for owner failure/fraud. Decide partial-day/partial-slot failure, commission reversal, and how approved pauses interact with cancellations. | P08 refunds; P09 settlement reconciliation |
-| D07 | Commission is 25%, but who pays gateway/Route charges, and what is the commission basis? | For a Rs 10,000 eligible booking: owner Rs 7,500, platform Rs 2,500 before provider expenses; provider fees absorbed by platform. This is an example awaiting confirmation. Define treatment of refunds, fines, future taxes, and rounding. | P07 ledger; P08 refunds; P09 payouts |
-| D08 | Owner supplies photo/video evidence; administrator decides completion, fraud, refunds, and payout. How long can advertisers dispute evidence, and what happens if no evidence or response arrives? | Evidence submission, advertiser dispute opportunity, then explicit admin release. Never auto-pay merely because end date passed. Define evidence deadline, dispute window, response targets, and disputes after settlement. | P08 completion; P09 payout |
-| D09 | Supabase requested for OTP/email authentication and notifications via website, Gmail, and SMS. Does Gmail mean recipients or the sender service? Is email login password-based or OTP/link-based? | Supabase Auth with phone OTP and selected email mode; external SMTP and SMS delivery providers. Application worker sends business notifications. Use a branded sender delivered to any valid email, if agreed. Verify linking phone/email to one account. | P02 auth; P06 communication production integration |
-| D10 | Hosting outside India is unacceptable. Does the restriction also cover every third-party processor, including maps, email, SMS, support tools, and telemetry? | All application compute, database, uploads, logs, backups, and recovery copies target India. Verify contractual/technical scope for managed services; do not treat a Mumbai project setting as proof that every service component stays in India. | P01 final provider selection; P11 production deployment |
-| D11 | UI references focus on Kerala. Is launch Kerala-only or all India? | English/INR/IST throughout, with configurable supported locations. Reference city names and imagery are illustrative until scope is answered. | P04 discovery/content; P11 launch content |
-| D12 | Hosting budget, deadline, and initial usage are unknown; user requests a startup-oriented approach. | Prepare cost worksheet and a proposed workload for review; use measured capacity before selecting final sizes. No invented client budget, usage forecast, launch date, or availability commitment. | P10 load acceptance targets; P11 operating budget |
-| D13 | Razorpay preferred for collection, commission, and settlement; manual bank-reference fallback if needed. Which facilities are available for the client account? | Validate Route onboarding, linked owner accounts, deferred settlement, refund/reversal support, and campaign-duration limits in the selected account. Enable manual payout recording only as an explicitly controlled alternate path, never alongside an in-flight gateway payout. | P07 provider design; P09 live payouts; P11 live money |
-| D14 | Upload formats, sizes, duration/resolution limits, theatre slot lengths, repeat frequency, operating hours, evidence retention, and owner verification documents are not specified. | Define category-specific inventory and media requirements with client/owners. Store the promised duration/frequency/hours in each contract because Pixlwave does not control playback. Propose technical limits in P00 and validate real sample media before P03 acceptance. | P03 media/inventory; P05 contract; P08 evidence; P11 retention |
-| D15 | GST is explicitly deferred, with room reserved for future development. What must be enabled before the client permits a real-money public launch? | Keep tax calculation behind a separate interface and distinguish booking receipts from GST invoices. Record the client-approved tax/invoicing scope before enabling live checkout; do not label omitted GST as an exemption. | P07 receipt design; P11 live checkout |
-
-## Confirmed decisions and their source
-
-All entries below come from user answers in this task, overriding conflicting PDF/UI examples.
-
-| ID | Decision |
-| --- | --- |
-| C01 | Build the complete system from scratch, with all three advertising categories implemented by completion. |
-| C02 | One person per account; the same account can act as advertiser and owner. Administrators verify owners and approve listings. |
-| C03 | Public browsing; sign-in required for booking. Responsive English website, INR, IST. |
-| C04 | Normal digital screens are exclusively reserved by day. Theatres offer multiple ad slots per show. Mobile billboards offer multiple rotating ad slots and owner-controlled route options. |
-| C05 | Owners approve advertising requests; payment follows approval. Pixlwave handles the marketplace and does not deliver or play ads on physical screens. |
-| C06 | Approved inventory is reserved. Multi-booking cart payment opens for 24 hours only after all requests are accepted/rejected; early approvals remain reserved while others await decisions. |
-| C07 | Platform commission is 25%; owner receives settlement after screening completion, subject to admin control. Razorpay preferred; controlled manual bank-reference fallback if required. |
-| C08 | Owner photo/video evidence supports completion. Administrator decides fraud, non-delivery, refunds, and whether to release payment. |
-| C09 | Extensions/pauses require approval. Missed days are refundable; paid cancellations are allowed with admin refund review in 1-2 days; pause-related refund incurs a small fine whose definition is pending. |
-| C10 | Supabase requested for authentication. In-app, email, and SMS notifications required, with a ticket support system. |
-| C11 | Location display is required; live vehicle GPS tracking is excluded. |
-| C12 | Pixlwave brand; replaceable logo; supplied UI references; no real inventory/content yet. |
-| C13 | Dynamic pricing based on demand is required. Booking requests cannot target the upcoming eight days; response-time conflict remains pending. |
-| C14 | Hosting outside India is not acceptable. GST implementation deferred with an extension point. Each phase requires testing and manual validation. |
-
-## Answer history
-
-| Date | Decision | Answer/source | Changes made | Validation implications |
+| ID | Status | Current accepted rule | Remaining detail or verification | Affected phases |
 | --- | --- | --- | --- | --- |
-| 2026-09-14 | Draft authorization | User: create the plan now and modify after later answers. | Created draft planning documents; pending policies are explicitly unresolved. | No application implementation or test execution claimed. |
+| D01 | RESOLVED POLICY / VERIFY | Earliest service start is successful payment + 192 hours (8 x 24); review/cancellation cutoff is payment + 168 hours (7 x 24). Payment on 1 October reaches the review deadline on 8 October and earliest service on 9 October at the same time of day. Undecided requests expire into manual refund tasks. | Use trusted capture timestamps, UTC storage and IST display. Do not round to midnight or reapply notice at approval. Test before/at/after both boundaries; compare actual operating/show starts, not date labels alone. No automatic money movement. | P00, P05-P08, P10-P11 |
+| D02 | RESOLVED POLICY / VERIFY | One upfront payment for a frozen cart; additions go to a new cart. Payment creates unreserved paid requests. Manual/automatic rejection creates per-item tasks for admin to refund manually. | Validate idempotent paid submission, line allocations, independent decisions and manual refund records. No automatic refund API calls. Failed payment is not funded business; preserve cart and financial history. | P05, P07 |
+| D03 | RESOLVED POLICY / VERIFY | Owner-enabled custom mobile route allowed only if that vehicle has no other approved bookings for the dates. Admin checks with the owner and records the decision. Rotating slots remain supported. | Check all overlapping approved/paid-active commitments atomically. Paid-pending requests are not approved commitments. Later shared-slot approvals must use the committed route; conflicting paid requests may require rejection/refund. | P03, P05 |
+| D04 | RESOLVED POLICY / VERIFY | Owner supplies initial base price. Subsequent published-price changes are made only by admin after discussing with the owner. No dynamic, demand-based or locality-based pricing. Booked amounts remain fixed. | Define initial rate publication fields and effective time in implementation. Record old/new rate, admin, discussion note, reason and effective date. Rate changes may update future quotes but cannot alter a paid booking; customer must see and accept any changed quote before paying. | P03-P04, P07 |
+| D05 | RESOLVED POLICY / VERIFY | Advertiser cancellation only within seven days of successful payment refunds 95% of the cancelled booking amount. Pixlwave retains 5% as the total cancellation fee, including Razorpay processing charges. No pause/resume, extension or in-place changes. | No separate processing-charge deduction or added 15% fulfillment commission. Apply the percentage to cancelled items only; cancelled amounts earn no owner service payout. Implementation: round the fee once per cancelled line to the nearest paise (half up), then derive refund by subtraction. Verify Rs 10,000 -> Rs 9,500 refund + Rs 500 Pixlwave fee; record actual gateway costs separately. No cancellation penalty for admin rejection, automatic rejection or owner failure; only actual applicable Razorpay processing charges are deducted. Manual processing is specified in D06. | P05, P07-P09 |
+| D06 | RESOLVED MANUAL POLICY / VERIFY | Admin performs all refunds manually and records refunded after completion. Admin manually determines refunds for partial hours/plays/service from evidence, without an automatic proration formula. Owner non-delivery remains the refund exception after seven days. | Preserve timely request eligibility while processing. Require authorized assessment, reason, evidence, applicable charge and net amount, remaining-paid-value limits, reference and audit history. Apply D07 deductions; reconcile owner/commission adjustments. Manual processing SLA and evidence retention are operational setup items, not unresolved calculation policy. | P07-P09 |
+| D07 | RESOLVED POLICY / VERIFY | Completed service: owner 85%, Pixlwave 15%, with Razorpay charges paid from Pixlwave's share. Advertiser cancellation: 95% refund and 5% Pixlwave retention inclusive of charges. Admin rejection, automatic deadline rejection or owner failure: refund affected payment less actual applicable Razorpay processing charges; no penalty. | Deduct processing charges once only; never apply the 5% cancellation fee to rejection/owner failure. Use actual recorded costs and deterministic line allocations for grouped payments; admin partial-delivery assessment follows D06. Reconcile gross service adjustments, net refunds and owner/commission balances with an audit trail. No penalty or owner charge is inferred. | P07-P09 |
+| D08 | MANUAL PAYOUT CONFIRMED / VERIFY | Admin manually transfers owner funds after verifying fulfilled service and evidence. No automated payout or fixed 48-hour release timer. | Record beneficiary, verified fulfillment, amount, bank reference, proof, operator and time. Group eligible same-owner lines under one external transaction with balanced allocations; record erroneous external transfers as exceptions, not approved settlement. Unresolved obligations block affected payout. Define evidence retention and operational follow-up; late non-delivery after settlement needs admin reconciliation, without automatically charging the owner or adding a new reporting deadline. | P08-P09 |
+| D09 | PARTIAL | Supabase authentication; in-app/email/SMS events and support tickets. Normal Gmail/other recipient delivery allowed. Requests go to admin, not automatically to owner. | Select email login method, SMTP/SMS providers, sender/domain and verified account linking. Provider setup must support real delivery. Send owners only the confirmed fulfillment information admin authorizes, never raw request queues/private coordination notes. | P02, P06 |
+| D10 | RESOLVED POLICY / VERIFY | Main application servers and data are in India; normal external email delivery allowed. | Verify compute, database, first-party uploads, logs, backups and restore locations. Document provider data flows rather than assume every external service component stays in India. | P01, P10-P11 |
+| D11 | RESOLVED POLICY / VERIFY | Kerala-only initial inventory launch, with later expansion supported. English, INR and IST retained. | Enforce supported geography in listing publication/discovery/booking; this does not restrict where advertisers themselves live. | P03-P04, P11 |
+| D12 | OPEN / VERIFY | Startup-oriented hosting; no fixed budget, launch date or traffic forecast provided. | Propose and validate workload, service targets, recovery and component costs. Do not present assumptions as client forecasts. | P10-P11 |
+| D13 | MANUAL MONEY OPERATIONS CONFIRMED / VERIFY | Razorpay checkout collects advertiser payments. Admin performs refunds manually and records completion. Owner payout is a manual bank transfer after verification. Razorpay Route and automated refund/payout execution are excluded. | Verify account checkout and manual refund capabilities, transaction references and grouped-payment item reconciliation. Separate payment webhooks from admin completion status; a webhook alone must not mark an admin refund task refunded. Check references and actual amounts; never retry uncertain money movements automatically. | P07, P09, P11 |
+| D14 | SERVICE FIELDS CONFIRMED / MEDIA DETAILS OPEN | Owners specify ad duration, plays per show/day and operating hours per listing, subject to admin approval. | Validate category-specific capacity/service promises, snapshot approved terms on paid bookings and prohibit edits that silently change commitments. Technical upload limits, verification documents and evidence retention remain to be specified and tested. Owners fulfill service outside the website. | P03, P05, P08, P11 |
+| D15 | DEFERRED / RELEASE CHECK | GST feature deferred, with an extension point. | Distinguish booking receipts from GST invoices and record client-approved launch invoicing scope. Razorpay fees/tax are a separate provider expense. | P07, P11 |
+| D16 | RESOLVED POLICY / VERIFY | Mappls primary, Google Maps fallback, provider adapter. First-party listing coordinates/locality/routes stored in India's database. | Obtain commercial terms/quotas; verify Kerala accuracy, key restrictions, provenance/licensing of provider-derived data and provider failure behaviour before fallback. | P01, P03-P04, P10-P11 |
+| D17 | RESOLVED POLICY / VERIFY | User explicitly selected reservation only after admin approval. Paid-pending requests do not reserve screens or slots. | Show paid-awaiting-confirmation clearly. Check capacity atomically when admin accepts; multiple paid requests can compete for one slot. Declined requests retain refund liabilities. Cancellation/rejection releases only a reservation that actually exists. | P05, P07-P09 |
+
+Manual execution supersedes earlier immediate/automatic refund initiation and Route-based payout proposals. Automatic deadline rejection remains; it only creates an admin task. The latest charge answer applies to rejection/owner failure and does not override the explicit completed-booking fee allocation.
+
+Review findings, source coverage and remaining questions: [requirements review](requirements-review.md).
+
+All three questions from the v0.6 review are answered. The user's final clarification supersedes the ambiguous statement that charges come from a cancellation fee/penalty: for rejection/owner failure there is no penalty; only actual applicable Razorpay processing charges are deducted from the refund.
+
+## Confirmed requirements
+
+| ID | Rule |
+| --- | --- |
+| C01 | Complete marketplace with LED screens, theatre slots and mobile rotating ad slots by completion. |
+| C02 | One individual account may act as advertiser and owner; admin verifies owners/listings and separately controls privileged decisions. |
+| C03 | Public browsing, sign-in for booking, responsive English interface, INR and IST. |
+| C04 | LED whole-day exclusivity; theatre multiple slots per show; mobile rotating slots and owner-permitted routes. Custom route requires no other approved vehicle booking for the dates. |
+| C05 | Admin manually coordinates with owners and decides within seven days of payment. No owner request queue. Undecided requests automatically reject at deadline and create manual refund tasks. |
+| C06 | One upfront frozen-cart payment; additions in a new cart. Admin performs refunds manually and records refunded after completion. |
+| C07 | Completed service: 85% owner share, 15% Pixlwave commission; Razorpay charges come from Pixlwave's share. Admin transfers owner funds manually after verification. |
+| C08 | Admin completion/non-delivery review and owner evidence retained. The previous 48-hour window is removed. |
+| C09 | Advertiser cancellation only within seven days of payment: refund 95% of the cancelled booking amount and retain 5% for Pixlwave inclusive of Razorpay processing charges, without an additional processing deduction. No pause/change workflow. Owner inability/non-delivery remains the after-seven-days business refund exception. |
+| C10 | Supabase auth, in-app/email/SMS notifications and ticket support; normal email recipients allowed. |
+| C11 | Locations/planned routes displayed, no live GPS tracking or physical playback control. |
+| C12 | Pixlwave branding, replaceable logo, reference-led UI, sample inventory for development. |
+| C13 | Owner initial base price; admin changes published rates after discussion. No dynamic pricing. Paid prices remain fixed. Service starts at least 192 hours after payment; review/cancellation closes at 168 hours. Owner-defined ad duration, plays per show/day and operating hours require admin approval. |
+| C14 | Main servers/data in India; GST feature deferred; every phase needs tests and manual acceptance. |
+| C15 | Kerala-first launch, future geographic expansion supported. |
+| C16 | Mappls primary/Google Maps fallback behind a replaceable adapter. |
+| C17 | Both seven-day periods start at successful payment. Reservation occurs only when admin approves, not when the advertiser pays. |
+
+## Superseded policy history
+
+This section is historical only and must not drive implementation.
+
+| Earlier policy | Current replacement |
+| --- | --- |
+| Owners receive and approve requests; owner response 8-10 days | Admin alone coordinates and decides within seven days of successful payment |
+| Collect after all owners decide; 24-hour payment deadline | One payment at submission, followed by individual admin decisions and rejected-item refunds |
+| Approved unpaid holds while waiting for other cart decisions | All reviewed requests already paid; reserve only at admin approval |
+| Dynamic demand/locality pricing and pricing limits | Owner initial base price; admin-only published rate changes after discussion |
+| 48-hour completion-issue window before payout | No fixed 48-hour window; fulfillment/admin review and non-delivery exception govern |
+| Pause/resume/extension/change workflows and pause penalties | Removed; advertiser cancellation within seven days with a cancellation fee; new dates use a new booking |
+| Automatic rejection refunds and immediate refund API execution | Deadline rejection creates a manual refund task; admin performs the refund and records completion |
+| Route splitting and conditional automated owner settlement | Admin manually transfers owner funds after verification and records the bank reference |
+| Original 25% commission | Superseded earlier by 15%, retained in current scope |
+
+## Answer history and maintenance
+
+| Date | Revision | Source / effect |
+| --- | --- | --- |
+| 2026-09-14 | 0.1 | User authorized a draft with pending questions and phase handoffs. |
+| 2026-09-14 | 0.2 | Client's eight answers established 15%, Kerala launch and other rules; several workflow rules were later superseded. |
+| 2026-09-14 | 0.3 | User approved Mappls primary/Google fallback. |
+| 2026-09-14 | 0.4 | Latest client clarification replaced booking approval, payment timing, refunds/cancellation and price management. |
+| 2026-09-14 | 0.4 follow-up | User confirmed seven days from payment, 5% cancellation fee, approval-only reservation, automatic deadline rejection/refund and immediate rejection-refund initiation. |
+
+Update this register, plan and affected phase handoffs together. Retain superseded rules only in history. No application or live financial records exist, so this revision requires no data migration and claims no executed application tests.
+| 2026-09-14 | 0.4 cancellation allocation | User confirmed cancellation within seven days refunds the paid amount less 5%, retained by Pixlwave inclusive of Razorpay processing charges. Recorded 95% refund and no additional processing deduction; cancellation initiation timing remains separate. |
+| 2026-09-15 | 0.5 | User confirmed after-eight-day dates and maximum seven-day approval, manual refunds with admin completion status, manual owner transfers after verification, completed-booking charges from Pixlwave's 15%, and admin-approved owner service fields. Pixlwave does not cover rejection/owner-failure charges; payer remains open. |
+| 2026-09-15 | 0.6 | Documentation audit clarified payment/notice/receipt/manual-journal contracts and mapped the original blueprint. Three business questions remain D01/D06/D07; engineering assumptions are labeled in plan section 3.6. |
+| 2026-09-15 | 0.7 | User confirmed 192-hour notice, 168-hour review deadline, admin-determined partial-delivery refunds and no penalty for rejection/owner failure: deduct Razorpay processing charges from payment and refund the rest. D01/D06/D07 policy questions resolved. |

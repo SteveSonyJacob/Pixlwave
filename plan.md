@@ -1,529 +1,669 @@
 # Pixlwave production development plan
 
-Version: 0.1 draft  
-Updated: 2026-09-14  
-Status: planning only; no application development started  
-Purpose: phased implementation, explicit validation gates, and continuity between development sessions.
+Version: 0.7 draft  
+Updated: 2026-09-15  
+Status: planning only; no application implementation or application tests started  
+Purpose: phased development, testable acceptance criteria and continuity between development sessions.
 
-## 1. Authority and draft status
+## 1. Authority and current scope
 
-The user authorized creating this plan now and updating it after remaining questions are answered. Confirmed user answers are requirements. Unanswered questions and assistant recommendations are recorded in [the decision register](docs/decisions.md) and are not approved policies.
+This revision incorporates the client's latest operating model and the user's follow-up answers. It supersedes conflicting earlier rules. [docs/decisions.md](docs/decisions.md) distinguishes confirmed policies, unanswered details and historical proposals. The user authorized updating this draft before all remaining values are answered.
 
-The PDF is an initial frontend blueprint. The two images provide visual direction, not additional feature mandates or verified business claims. Later user clarifications override both. This plan does not silently resolve the eight-day/ten-day conflict, pricing formula, pause fine, route conflicts, or provider restrictions.
+Pixlwave is an admin-managed advertising marketplace. An advertiser selects inventory, uploads the ad and pays once for the whole submitted cart. Admin manually discusses each request with its owner and accepts/rejects it within seven days of successful payment. Owners do not receive advertiser requests directly and cannot decide them through the platform.
 
-Source copies:
+Paid-pending requests do not reserve inventory. Only admin approval reserves capacity. Every manual/automatic rejection creates an item refund task for admin; still-undecided requests automatically reject at seven days. The website never executes refunds automatically. Admin performs the refund manually and then records its completion as refunded. Advertisers may cancel within seven days of payment for a 95% refund of the cancelled booking amount. Pixlwave retains the remaining 5% as the total cancellation fee, including Razorpay processing charges; no separate processing-charge deduction applies. Owner inability/non-delivery is the business refund exception after day seven.
+
+Owners enter initial base prices. Subsequent published-price changes are admin-only after discussion with the owner. No demand-based or locality-based price adjustment is implemented.
+
+All three categories remain required:
+- LED/digital screen: whole-screen daily reservation.
+- Theatre: multiple ad slots per show with defined duration and service promises.
+- Mobile billboard: multiple rotating slots on a vehicle, owner-permitted routes, custom route only when no other approved vehicle booking overlaps the dates.
+
+Other confirmed requirements:
+- One person per account, with advertiser/owner mode switching; separately granted admin access.
+- Admin verifies owners and approves listings; public browsing and authenticated booking.
+- Earliest service start is successful payment + 192 hours (8 x 24); admin review and advertiser cancellation close at payment + 168 hours (7 x 24). Payment on 1 October reaches the review deadline on 8 October and the earliest service start on 9 October, at the same time of day.
+- Responsive English website, INR, IST, Kerala-only initial inventory launch, expandable geographic model.
+- 15% Pixlwave commission and 85% owner share for completed service; Razorpay processing charges come out of Pixlwave's 15%. For admin rejection, deadline rejection or owner failure, deduct the actual applicable Razorpay processing charges from the affected payment and refund the remainder, with no penalty.
+- Admin manually transfers owner funds after fulfillment verification; completion evidence and transfer reference retained. No automated payouts or Route integration.
+- Supabase auth, ticket support and in-app/email/SMS notifications.
+- Main servers/data in India; normal email delivery to Gmail/other addresses allowed.
+- Mappls primary, Google Maps fallback through a provider adapter.
+- Reference-led UI, replaceable logo and clearly marked sample inventory during development.
+- Tests and user/client manual acceptance for every phase.
+
+Excluded from current scope: direct owner booking approval, delayed collection after decisions, payment countdowns after approval, a fixed 48-hour completion window, dynamic pricing, pause/resume, extensions and in-place campaign changes, live GPS tracking, physical ad playback/control, customer teams and native mobile apps. Additional dates require a new booking. GST implementation remains deferred with an extension point and a launch invoicing check.
+
+Sources and continuity:
 - [Frontend blueprint](docs/references/frontend-blueprint.pdf)
-- [Homepage visual reference](docs/references/ui-homepage.jpg)
-- [Public and dashboard visual reference](docs/references/ui-pages.jpg)
+- [Homepage reference](docs/references/ui-homepage.jpg)
+- [Page/dashboard reference](docs/references/ui-pages.jpg)
+- [Decision register](docs/decisions.md)
+- [Handoff guide and phase index](handoff.md)
 
-Development handoff entry point: [handoff.md](handoff.md). Phase files start as NOT STARTED; test checklists are planned, not executed results.
+The blueprint and images are reference material. Their old payment/owner workflows and marketing claims do not override the current client rules.
 
-## 2. Product and scope
+## 2. Requirement traceability
 
-Pixlwave connects advertisers with third-party advertising inventory owners. Customers browse public listings, submit advertising requests, wait for owner decisions, pay through one grouped checkout, and manage campaigns. Owners list inventory, review requests, provide the advertising service outside Pixlwave, and submit completion evidence. Administrators verify owners, moderate listings, resolve disputes/refunds, and control settlement.
-
-All three categories must be implemented by completion:
-- Normal digital/LED screens: exclusive reservation of the screen for booked days.
-- Theatre advertising: owner-defined shows with multiple bookable ad slots and defined durations.
-- Mobile billboards: multiple rotating ad slots on a vehicle, owner-defined routes, and optional custom routing subject to owner permission and a pending shared-route policy.
-
-One individual per account; an account may switch between advertiser and owner roles. Platform administrator access is separately granted. There are no customer organization/team accounts in the confirmed scope.
-
-Confirmed deployment/product constraints: responsive English website, INR, IST, public browsing with sign-in for bookings, India-only hosting, Pixlwave branding with a replaceable logo, no existing code or real listings. The user/client manually validates every phase.
-
-Excluded or deferred:
-- Physical ad playback, remote screen control, and automated proof-of-play are excluded. Owners perform screening.
-- Live vehicle GPS tracking is excluded; listing locations and applicable planned routes are shown.
-- Native mobile apps are not in the responsive website scope.
-- Live chat/chatbot is replaced by support tickets.
-- GST implementation is deferred with an extension point; D15 governs production receipt/tax readiness.
-- Extra categories, favorites, enquiry chat, and claimed brand counts pictured in references are not automatically scope.
-- No production purchase, account activation, real charge, payout, or deployment is authorized by writing this document.
-
-## 3. Requirement traceability
-
-| ID | Confirmed requirement | Implementation / validation phases |
+| ID | Current requirement | Phases |
 | --- | --- | --- |
-| R01 | Complete responsive marketplace with advertiser, owner, admin access | P00-P03, P10-P11 |
-| R02 | Supabase authentication, recovery/profile/business details, one account with two marketplace roles | P02, P06 |
-| R03 | Administrator verifies owners and approves listings | P02-P03, P09 |
-| R04 | Public city/locality/category search, featured inventory, maps, detail pages, calendar and specs | P03-P04 |
-| R05 | LED inventory reserves whole-screen days | P03, P05 |
-| R06 | Theatre inventory supports multiple advertiser slots per show | P03, P05 |
-| R07 | Mobile inventory supports rotating slots and owner-controlled route options | P03, P05 |
-| R08 | Dynamic demand-based pricing, possibly including nearby inventory | P04-P05, P07 |
-| R09 | No requests for the upcoming eight days; owner approval required | P00, P05 |
-| R10 | Upload image/video ad, preview, and owner approval | P03, P05 |
-| R11 | Cart with multiple bookings; early-approved capacity stays held until all decisions; then one 24-hour payment window | P05, P07 |
-| R12 | Razorpay INR checkout, allocations/receipts; GST extension area | P07 |
-| R13 | Campaign states, approval-based changes, completion evidence, admin disputes | P08 |
-| R14 | Missed delivery refunds, paid cancellation, 1-2-day admin review, pause-related fine | P08 |
-| R15 | 25% commission, deferred owner settlement, admin-controlled release, possible manual bank-reference fallback | P07-P09 |
-| R16 | In-app/email/SMS lifecycle notifications and ticket support | P06, integrated P07-P09 |
-| R17 | India-only hosting, production reliability, tests and manual phase validation | P01, P10-P11 |
-| R18 | Reference-led UI, replaceable logo, sample data during development, real content at launch | P00, P03-P04, P11 |
+| R01 | Complete admin-managed responsive marketplace, three inventory categories | P00-P11 |
+| R02 | Supabase auth/profile/recovery, one person with advertiser/owner roles | P02, P06 |
+| R03 | Owner/listing verification, initial owner base price, protected admin operations | P02-P03, P09 |
+| R04 | Kerala search, category/location/date/budget filters, featured listings, maps and details | P03-P04 |
+| R05 | Whole-screen daily capacity | P03, P05 |
+| R06 | Multiple theatre ad slots per show | P03, P05 |
+| R07 | Mobile rotating slots and approved route compatibility | P03, P05 |
+| R08 | Fixed published rates; admin-only changes after owner discussion; booked-price protection | P03-P04, P07 |
+| R09 | Eight-day minimum notice; admin-only request decisions within seven days of successful payment | P00, P02, P05-P07 |
+| R10 | Secure ad upload/preview, reviewed through admin coordination | P03, P05 |
+| R11 | Frozen submitted cart; one upfront payment for all items; reserve only on admin approval | P05, P07 |
+| R12 | Razorpay payment/receipts, item allocations, rejected-item refunds, GST extension point | P07 |
+| R13 | Campaign fulfillment/evidence, admin completion and non-delivery review; no pause/change flows | P08 |
+| R14 | Cancellation within seven days: 95% refund, 5% Pixlwave fee inclusive of Razorpay processing charges; admin-handled rejection refunds; later owner non-delivery exception; missed-day/show/slot refunds | P07-P09 |
+| R15 | 15% commission, reconciled post-fulfillment admin-controlled owner settlement | P07-P09 |
+| R16 | In-app/email/SMS notifications, admin decision reminders and support tickets | P06-P09 |
+| R17 | India-hosted main servers/data, reliable operation, automated and manual validation | P01, P10-P11 |
+| R18 | Reference-led UI, replaceable logo, sample data, real Kerala launch content | P00, P03-P04, P11 |
 
-Requirement implementation cannot be marked complete until its relevant acceptance tests and manual review pass.
+Retain these IDs across handoffs. A required feature is complete only when its automated checks and manual review pass. See [the source coverage and review](docs/requirements-review.md) for each blueprint section, replaced requirements, corrected ambiguities and resolved business questions.
 
-## 4. Proposed technical architecture
+## 3. Core workflow and invariants
 
-This is a working recommendation that can be adjusted before foundation acceptance.
+### 3.1 Upfront payment and admin decisions
 
-| Component | Direction | Responsibility |
+1. Advertiser creates a cart of requested days/shows/slots with creative assets and a visible price breakdown.
+2. Server validates request eligibility and the current published quote. The customer pays the cart total once.
+3. Verified payment success records immutable paid lines and enters paid-awaiting-admin review. Both seven-day clocks use the same trusted payment-success timestamp.
+4. Admin contacts the owner manually, records coordination notes and decides each line within seven days.
+5. Admin acceptance atomically checks availability and reserves capacity. Rejection creates that line's manual refund task; undecided requests automatically reject at the seven-day deadline and enter the same queue. Other items proceed independently.
+6. Accepted service is delivered by the owner. Admin verifies fulfillment/evidence, transfers eligible owner funds manually and records the completed transfer with its reference.
+7. Timely advertiser cancellation refunds 95% of the cancelled booking amount; Pixlwave retains 5%, inclusive of Razorpay processing charges. Owner non-delivery can justify a refund even after the ordinary cutoff.
+
+Payment success is not booking confirmation. Use “Payment received - awaiting admin confirmation” until acceptance. Owners see only appropriate confirmed fulfillment information released by admin, not the original request queue or private admin/customer notes.
+
+Example: a cart contains booking A at Rs 6,000 and B at Rs 4,000. Advertiser pays Rs 10,000 before decisions. Admin accepts A and rejects B; A reserves its capacity and B becomes a refund obligation. No second payment or wait-for-all-decisions payment timer is introduced. Admin processes B's refund manually. Deduct only the actual Razorpay processing charges allocated to B and manually refund the remainder. No 5% cancellation fee, other penalty or fulfillment commission applies to B.
+
+### 3.2 Timing
+
+Confirmed:
+- Both the admin decision deadline and advertiser cancellation deadline are successful payment + 168 hours (7 x 24).
+- Model this as a stored timestamp and enforce it on the server; webhook delivery time, user device time, admin acceptance and retries cannot restart the clock.
+- Earliest service start is successful payment + 192 hours (8 x 24), including that exact instant. For payment on 1 October at 10:00 IST, the review/cancellation cutoff is 8 October at 10:00 IST and earliest service is 9 October at 10:00 IST. Do not round to midnight or the end of the seventh day.
+- Admin must decide within seven days of payment. At deadline, an undecided request automatically rejects and creates a manual refund task without moving funds. Late acceptance is forbidden even if the expiry worker is delayed.
+- Cancellation eligibility uses the request timestamp within seven days of successful payment. A timely request remains eligible while admin processes its refund; admin completion after the cutoff does not make it a late cancellation. All refunds are manual and remain pending until completed and recorded.
+
+
+For date-based LED/mobile inventory, compare the published operating start of the first booked day with the exact 192-hour threshold; for theatre inventory compare the selected show time. Do not silently sell a shortened whole-day booking or allow an early show merely because its calendar date matches. Store timestamps in UTC and display the full IST deadline. At the 168-hour cutoff, undecided requests expire and advertiser cancellation closes; a timely recorded cancellation remains eligible during later manual processing.
+
+On manual/automatic rejection or eligible cancellation, persist a refund obligation and notify admin. Admin performs the refund outside automated application jobs, then records the completed amount, reason, payment/refund reference and completion time and marks it refunded. Pending or failed attempts remain visible; recording intent or rejection must never mark money refunded. Processing may finish after day seven for a timely eligible event. Do not impose an unconfirmed refund-processing SLA or automatically call a refund API. Preserve provider/bank evidence and distinguish completion from estimated bank-credit timing.
+
+### 3.3 Capacity and mobile routes
+
+No cart, checkout or paid-pending request reserves advertising inventory. Multiple advertisers can therefore have paid requests for the same remaining unit. Availability means currently uncommitted capacity, not guaranteed service before admin approval.
+
+At admin approval, one database transaction:
+- verifies admin authorization and the current paid/request/cancellation state;
+- verifies the recorded payment-time notice check, that service has not started, and capacity across every requested unit; it must not require another eight-day gap at approval;
+- checks whole-day exclusivity or available theatre/mobile slots;
+- checks approved mobile route compatibility across overlapping vehicle dates;
+- writes the reservation, admin decision, audit and notification event together.
+
+If capacity has been taken, approval fails without a partial allocation. Admin resolves the request, normally by rejection/refund; no automatic alternative dates or owner substitution is assumed. Pending paid requests do not satisfy the “other approved booking” route restriction, but concurrent approvals must never establish incompatible routes.
+
+Only existing approved allocations are released on rejection/cancellation; a paid-pending request has none to release. Inventory edits/blackouts may not silently invalidate an approved service.
+
+### 3.4 Fixed pricing
+
+Owner supplies the initial base rate. Admin controls publication and every later published-rate change after discussing with the owner. Record owner discussion, administrator, old/new value, effective time and reason.
+
+Calculate quotes from published rate, unit and quantity; store the rate version and paid line values. Changes in demand, request count, occupancy or nearby listing rates never automatically alter price.
+
+Before payment, a changed quote must be shown and accepted by the customer. After payment, the amount is immutable for that booking. Do not retroactively modify a paid-pending or approved line while discussing it with the owner. No dynamic pricing formula, demand aggregation, locality weighting or scheduled repricing job is needed.
+
+### 3.5 Separate data and state
+
+Proposed records: identity/roles, owner verification, listings, venues/auditoriums/shows, vehicles/routes/slots, rate revisions, calendars/blackouts, media, quotes, cart and paid lines, payment attempts, admin coordination/decisions, reservations, cancellations, fulfillment/evidence, refund obligations/attempts, financial journal, transfer/settlement attempts, tickets, notifications/outbox and audits.
+
+Do not collapse payment, decision, fulfillment and money-return status into one field:
+- Payment: unpaid/processing/succeeded/failed plus separate refund totals.
+- Review: paid-awaiting-admin/accepted/rejected/cancelled. Overdue is an operational alert for a missed expiry job, not an approvable business state; past-deadline requests resolve to rejected. Record cancellation time and rejection reason separately.
+- Capacity: unreserved/approved-reserved/released.
+- Fulfillment: scheduled/in-service-window/owner-reported-complete/admin-verified/partially-delivered/non-delivery-under-review. The clock only indicates the scheduled window; it cannot prove ad playback or completion.
+- Refund: pending-admin/in-progress/refunded/failed; admin records refunded only after completing the refund and supplying its reference.
+- Settlement: ineligible/eligible-for-admin-review/verified/transfer-in-progress/settled/failed; admin records a completed manual transfer with a bank reference.
+
+A rejected line stays rejected even if its refund is still processing. A successful payment may coexist with rejected, accepted and refunded item states.
+
+
+### 3.6 Booking units, checkout and cancellation consistency
+
+Engineering specification derived from the confirmed workflow; validate examples in P00:
+- A submitted cart contains request lines. Each line identifies one listing/owner, a date range or explicit shows/slots, its creative version and the agreed route/service terms. Line-unit allocations preserve individual dated prices for later missed-day/show refunds.
+- LED dates include both start and end dates, and each booked day reserves the whole screen for its published operating hours. Theatre booking selects specific show instances and slot quantities; selecting multiple days expands to visible show instances, not an assumed all-day cinema reservation.
+- Mobile rotating bookings identify the vehicle, dates, slot duration, plays and published route. Shared advertisements cannot each request a conflicting route. Custom-route eligibility is checked on approval across the entire vehicle/date range.
+- Admin accepts or rejects the whole request line atomically; it cannot silently shorten dates or substitute shows. Different lines are decided independently. Advertiser cancellation cancels selected whole lines within the seven-day window; changing only some dates inside a line is an in-place change and remains excluded.
+- Record a submitted cart snapshot and freeze membership, price, creative version and service terms while its checkout is in progress. Additions use another cart. A failed attempt can retry without duplicating funded lines; an expired or intentionally edited checkout requires a new accepted snapshot and invalidates old application checkout links.
+- One Razorpay order represents the full snapshot total. Validate booking notice when forming checkout and against the trusted capture time before activating funded review. Late or invalid captures still remain recorded as customer money and create a manual reconciliation/refund task; never silently discard them or confirm an ineligible booking.
+- A quote has an explicit server-side validity period selected and documented during P01/P07. Published price changes do not mutate an already-issued order; honor a still-valid accepted snapshot or require a fresh visible quote before payment. Never charge a retroactive difference.
+- On admin approval, compare against the stored original notice check and the actual service dates; do not start another eight-day notice period. Both seven-day deadlines still originate from payment.
+- Serialize cancellation, approval and deadline rejection using one state transition transaction. An eligible cancellation accepted first prevents later approval and releases only its existing allocations; later refund processing does not retain capacity. A rejected/cancelled line cannot be relabeled to change the applicable fee.
+
+### 3.7 Creative files and fulfillment evidence
+
+Before checkout, advertiser previews a validated image/video that meets the listing's approved size, resolution, aspect ratio, duration and format constraints. Keep the exact asset/version attached to the paid request; unsafe or incompatible media cannot be submitted. Owner/admin approval is about this version. Do not introduce post-payment replacement or campaign editing silently under the upload feature.
+
+Admin privately reviews creatives and manually coordinates with the owner. After acceptance, admin releases confirmed service instructions and the approved asset through scoped access; owners never receive a raw request inbox. Evidence identifies the booked days/shows/slots, submitting owner and capture/upload times. Only the relevant advertiser, owner and admins may see permitted evidence. Admin verifies actual delivery; a photo/video or elapsed date alone is not proof that every contracted play occurred.
+
+For a completely missed day or show/slot, calculate the gross undelivered value from the original dated price allocations. For partly delivered days/slots, admin manually determines the refund from evidence; do not invent an automatic hours/plays formula. Keep the gross service adjustment, allocated actual processing charges, net advertiser refund and owner/commission adjustments separate. Apply no penalty for owner failure, and deduct applicable Razorpay charges only once.
+
+### 3.8 Manual financial records and truthful statuses
+
+Use one external transaction record per completed refund or owner bank transfer, with item allocations that sum exactly to that transaction's amount. A grouped refund may cover several lines from the same payment; a grouped owner transfer may cover several eligible lines for the same verified beneficiary. References are unique per external transaction, not forbidden from legitimately appearing in that transaction's line allocations.
+
+Only authorized admin can record completion, with amount, currency, beneficiary/payment link, reference, proof, operator and timestamp. Pending/failed operations must not appear refunded/settled. Provider events can supply reconciliation evidence but cannot automatically perform refunds, transfers or the admin completion action. Correct mistakes with audited amendment/reversal entries, not deletion.
+
+The website can prevent invalid normal settlement records; it cannot prevent an admin from making a transfer in an external bank account. Record any unmatched, duplicate or ineligible external movement in an exception queue so accounting reflects reality without making the booking fulfilled or the payout eligible. Reconcile uncertain outcomes before another external attempt.
+
+A payment receipt is available after verified payment, with order number, listing/date/show details, unit prices, totals and payment reference. A separate refund confirmation is downloadable after admin-recorded completion. Keep originals immutable, enforce account access and distinguish receipts from GST invoices. A booking remains rejected or cancelled even when its separate refund status changes.
+
+Campaign dashboards distinguish paid-awaiting-review, accepted/scheduled, within scheduled service window, owner-reported completion, admin-verified completion and delivery issue. A scheduled start notification must say the service window has started; it must not claim that Pixlwave observed the ad playing.
+
+## 4. Payments, cancellation, refunds and payout
+
+- Use integer paise and server-calculated totals. Verify signed gateway events; browser checkout success alone is insufficient.
+- One captured cart payment allocates to every paid line, not only later-accepted lines.
+- Pending customer money and rejected/cancelled refund obligations remain liabilities. They are not earned owner funds or automatically recognized commission.
+- Preserve a 15% commission version: Rs 10,000 completed service maps to Rs 8,500 owner / Rs 1,500 Pixlwave. Razorpay processing charges reduce Pixlwave's Rs 1,500, not the owner's Rs 8,500. Record actual gateway costs separately from gross commission.
+- For advertiser cancellation within seven days, Pixlwave retains 5% of the cancelled booking amount, including Razorpay processing charges, and refunds 95%. For completed bookings, Razorpay processing charges come from Pixlwave's 15% commission. For admin rejection, deadline rejection or owner failure, return the affected paid amount less actual applicable Razorpay processing charges; there is no cancellation penalty or additional fee. Admin manually determines partial-delivery refunds and records the corresponding financial adjustments.
+- Every manual/automatic rejection creates a manual refund obligation for the item. Admin performs and records each refund independently of other cart decisions. Never execute refund payments from application jobs; deduplicate obligations and admin completion records.
+- Advertiser cancellation is permitted only within seven days of successful payment. Refund 95% of the amount paid for cancelled bookings and allocate the remaining 5% to Pixlwave as the total cancellation fee, including Razorpay processing charges. For partial-cart cancellation, apply this only to the cancelled items. Do not deduct processing charges again or add the 15% fulfillment commission. No owner service payout is earned on the cancelled amount. No cancellation penalty applies to admin rejection, automatic rejection or owner failure; deduct only actual applicable Razorpay processing charges from that refund.
+- Cancellation example: Rs 10,000 cancelled within seven days returns Rs 9,500 to the advertiser; Pixlwave retains Rs 500, from which processing charges are covered. Record actual gateway charges separately as costs, not as additional advertiser deductions. Calculate in integer paise, round the fee once per cancelled line to the nearest paise (half up), and derive the refund as line amount minus fee so totals reconcile.
+- After the ordinary seven-day cutoff, owner inability/non-delivery is the stated business refund exception. Preserve evidence and admin review; missed daily units and theatre shows/slots use their booked amounts.
+- No pause/resume or extension refund rules remain. New dates use a new booking.
+- Cumulative refunds cannot exceed the amount paid for the affected items. Store compensating journal entries rather than deleting or overwriting financial history.
+- Duplicate/erroneous payment correction is a technical reconciliation concern with a separate defined procedure; the ordinary cancellation cutoff must not silently hide or retain unexplained money.
+- Owner settlement is a manual admin bank transfer after accepted service fulfillment and verification. Record verified evidence, owner beneficiary, amount, transaction reference, operator and completion time. No fixed 48-hour wait or deadline triggers a payout.
+- Unresolved rejection, cancellation, refund and non-delivery obligations block the affected payout. Do not pay any pending/rejected/unfulfilled line to an owner.
+- Reconcile payment captures and admin-recorded refunds/transfers against provider/bank references. If an external outcome is uncertain, admin checks it before repeating a refund or transfer; the website never automatically retries a money movement.
+- Manual owner transfer with a bank reference is the selected payout workflow. Razorpay Route, automatic splitting, transfer creation and release APIs are outside current implementation scope. Prevent duplicate admin completion records and warn about any already recorded transfer.
+- GST calculation has a separate future interface; booking receipts are not advertised as GST invoices without the agreed implementation.
+
+
+Confirmed refund rules:
+
+| Outcome | Advertiser refund | Deductions / execution |
 | --- | --- | --- |
-| Website/server | Next.js + TypeScript, modular application | Public pages, dashboards, authenticated APIs and server-side business rules |
-| UI | Tailwind CSS and reusable accessible components | Reference-led design, responsive forms, consistent states |
-| Authentication/database | Supabase Auth and PostgreSQL, explicitly Mumbai | Identities, persistent transactional data, access policies, migrations |
-| Media | Private object storage in Mumbai; public listing assets separated | Creative/evidence uploads, validation, controlled preview/download |
-| Background processing | Durable worker and transactional outbox, India-hosted | Expiry, notification delivery, reconciliation, retries |
-| Payments | Razorpay checkout and Route where account capabilities allow | Collection and controlled owner transfers/settlement |
-| Messaging | Supabase auth integration plus selected SMTP/SMS providers | Auth messages and application-driven business notifications |
-| Hosting | AWS Mumbai application/worker, Supabase Mumbai | Staging and production isolated; no foreign-region preview shortcut |
-| Verification | Unit tests, real PostgreSQL integration tests, Playwright, manual acceptance | Business logic, concurrency, full browser journeys, review evidence |
+| Advertiser cancellation recorded before payment + 168 hours | 95% of cancelled booking value | 5% retained by Pixlwave, including processing charges; no extra deduction |
+| Admin rejection, deadline rejection or owner failure | Affected paid value less actual applicable Razorpay processing charges | No cancellation fee or penalty; admin performs refund and records completion |
+| Partial delivery | Admin manually determines the service/refund assessment from evidence | Record assessment, applicable processing charge and net refund separately; no automatic hours/plays formula or owner-failure penalty |
 
-Use one repository with explicit domain modules. Avoid prematurely distributing business rules across separate services. A separate worker can share the application's domain code.
+Engineering accounting rule: use the actual recorded Razorpay processing cost for the captured payment, not a hardcoded percentage. For a mixed cart, allocate that cost proportionally to paid line values in integer paise, distributing rounding remainder deterministically. A refund for part of a line uses the applicable portion of its allocation; aggregate deductions cannot exceed the actual charge allocation or be deducted twice. For advertiser cancellation, this cost is already inside the 5% retention. Admin's partial-delivery assessment must reconcile gross service adjustment, deductions, net refund and remaining owner/platform balances before completion. Preserve evidence and audited changes. Do not add a separate penalty, 15% fulfillment commission or unapproved fee to a rejected/undelivered portion.
 
-Suggested boundaries: identity, owner verification, inventory, search, pricing, booking/reservations, cart, payments/ledger, campaigns, refunds, settlements, notifications, support, and audit.
+## 5. Architecture, maps and deployment
 
-Provider integration is not permission to put secrets in source control or browser code. Supabase access policies restrict direct database access; privileged operations and financial state changes remain server-controlled. Do not duplicate schema migration ownership across competing tools.
+| Component | Planned approach | Responsibility |
+| --- | --- | --- |
+| Web/server | Next.js and TypeScript in one modular repository | Public UI, three role views, server-side policies |
+| UI | Reusable accessible Tailwind components | Reference-led responsive forms, truthful statuses |
+| Identity/data | Supabase Auth and PostgreSQL, Mumbai | Verified identities, access policies, transactional records, migrations |
+| Background work | Durable worker/outbox in India | Admin reminders, notification delivery, deadline rejection/refund-task creation and reconciliation; no refund or payout execution |
+| Files | Private object storage in Mumbai; public listing images separated | Safe creatives/evidence, expiring access, retention |
+| Payments | Razorpay checkout; manual admin refund and bank-transfer records | Upfront collection, line allocations, refund tracking and verified manual owner settlement; no Route integration |
+| Communication | Selected SMTP/SMS integrated with Auth and application events | Website/email/SMS notifications, tickets |
+| Maps | Mappls primary, Google Maps fallback through adapter | Address/pin search, markers/clusters, planned routes |
+| Hosting | AWS Mumbai app/worker and Supabase Mumbai | Isolated staging/production, backups/logs/recovery in India |
+| Validation | Unit, real PostgreSQL integration, Playwright and manual review | Money/permission/capacity invariants and full workflows |
 
-India residency includes planned application compute, primary database, ad/evidence storage, logs, backups, and restore locations. D10 must establish the external-processor scope. Verify region and recovery options for the selected services before production approval.
+Keep privileged payment, rate, approval and refund mutations server-controlled and protected by database policies. A modular application plus worker is the initial recommendation; no separate pricing microservice is needed.
 
-### External capability checks
+Mapping uses first-party listing locations and owner-agreed route data; provider content needs the appropriate usage/storage terms. Mappls does not supply booking availability or pricing. Verify Kerala location accuracy, quotas, costs and data handling before production. Main application data stays in India; normal external email delivery is permitted.
+
+### Previously checked provider references
 
 - Supabase offers Mumbai as a specific project region. Its primary-region selection does not by itself prove every component/process meets a broader residency requirement: [Supabase regions](https://supabase.com/docs/guides/platform/regions).
 - Production Supabase auth email needs custom SMTP, and phone OTP needs an SMS provider: [SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [phone login](https://supabase.com/docs/guides/auth/phone-login).
-- Razorpay Route supports split payments and holding settlements until business conditions are met; account capability, onboarding, duration and refund/reversal behaviour must be verified: [Route](https://razorpay.com/route/), [refunds](https://razorpay.com/docs/payments/route/refund/).
+- Razorpay Route was previously researched ([Route](https://razorpay.com/route/), [refunds](https://razorpay.com/docs/payments/route/refund/)); it is excluded from the current manual payout implementation. Checkout and admin refund capabilities must be verified for the account before launch.
 - Next.js supports Node.js and Docker deployments: [deployment](https://nextjs.org/docs/app/getting-started/deploying).
 - PostgreSQL can enforce non-overlapping reservations using range constraints; shared capacity additionally needs appropriate slot rows/transactional controls: [range constraints](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES-CONSTRAINT).
 - AWS lists Mumbai among Lightsail regions; exact compute/service sizing remains a foundation decision: [AWS availability](https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-lightsail-aws-regions/).
+- Mappls supports interactive web maps, markers, GeoJSON/polylines and India-focused search/geocoding. It is the accepted primary provider; commercial terms, quotas, Kerala accuracy and data handling still require verification: [Web Maps](https://developer.mappls.com/documentation/sdk/Web/Web%20JS/), [search/geocoding](https://about.mappls.com/api/search-and-geocoding/).
 
 Sources checked during planning on 2026-09-13/14. Reverify capabilities and supported versions at implementation; these references are not a locked pricing quote.
 
-## 5. Core domain and state design
+## 6. UI and manual operations
 
-### Contracts and resource capacity
+Use the references' white layouts, blue/teal accents, prominent search, listing cards, map views and dashboard structure. Logo/assets remain replaceable.
 
-A campaign groups the customer's advertising activity. A booking is one owner/inventory contract with dated units, a creative snapshot, quoted pricing, approval, and fulfillment. A submitted cart groups booking requests for one payment. A payment covers accepted cart items, but refunds and owner settlements remain item-specific.
+Required screens:
+- Public Kerala home/search/map/details, How It Works, About/contact/support entry points and approved policy pages explaining the request/confirmation process.
+- Auth/profile and owner verification/listing creation with initial base price.
+- Cart/ad preview and upfront payment, followed by per-item admin review status and downloadable payment receipts/refund confirmations.
+- Admin paid-request queue, due/overdue filters, owner contact/discussion notes, decisions, capacity check and price-change audit.
+- Advertiser cancellations within policy, campaign status, evidence/non-delivery reports, payment/receipt/refund tracking.
+- Owner listings, confirmed service instructions, evidence and earnings, without an incoming customer-request approval inbox.
+- Admin completion/refund/settlement/finance/audit views and ticket support.
 
-Expected records include users/roles, owner verification, listings, venue/auditorium/show, vehicles/routes/slots, availability/blackouts, media assets, quote versions/lines, campaigns, bookings, approval decisions, reservation allocations, submitted carts/items, payment attempts, ledger entries, refund allocations, transfer/settlement attempts, evidence, disputes, notifications/outbox jobs, tickets/messages, and audit events.
-
-All exclusive or capacity-limited reservation changes must occur atomically in PostgreSQL. Calendar UI checks alone cannot prevent overselling. Availability considers approved unpaid holds, paid bookings, blackout dates, slot capacity, and mobile route compatibility. An owner must not reduce capacity or change a route in a way that silently violates existing contracts.
-
-Billing promises must specify the relevant day/show/slot, dates, duration, repeat frequency or operating hours, and route where applicable. Calendar completion is not proof an ad ran.
-
-### Cart approval and checkout
-
-Confirmed example: booking A approved on day 1, B on day 5, C on day 6. A and B remain reserved while later decisions are pending. After C's final decision on day 6, the accepted subtotal is payable until the corresponding time on day 7.
-
-Proposed technical states, to finalize against D01-D02:
-- Item review: submitted -> approved or rejected; possible withdrawn/expired terminals need explicit policy approval.
-- Reservation: held -> paid/committed or released.
-- Cart: draft -> awaiting decisions -> awaiting payment -> paid or expired/cancelled; no accepted items means no checkout.
-- Financial states are separate from campaign delivery and refund states.
-
-The final-decision transaction starts the payment window once, stores its absolute deadline, and emits an event. Repeated webhooks, owner clicks, or notifications cannot restart it. Approval only holds the purchased capacity: a theatre/mobile slot must not block remaining slots.
-
-No indefinite hold policy is silently assumed. D01 resolves minimum notice versus owner response time; D02 resolves unanswered requests and submitted-cart changes. The cutoff determines validity on every server action even if a cleanup worker is late.
-
-### Pricing
-
-Dynamic pricing is required, but its formula is pending. Proposed design uses versioned, explainable rules and qualified demand rather than an opaque model. Define a base rate, bounds, lookback, comparable locality/category, weighting, update interval, and fallback when there is little data. Duplicate/self-generated requests must not cheaply inflate demand.
-
-Store each quote's dated lines, pricing version and inputs, expiry, and approval/payment protection. Price freezing at submission is a recommendation awaiting D04. Whatever policy is chosen, never charge a changed amount without a customer-visible quote and consent.
-
-### Money, refunds, and settlement
-
-- Store INR in integer paise. Store commission and policy versions with each contract.
-- Calculate authoritative payable totals on the server. A browser callback cannot mark payment final.
-- One cart payment allocates exactly to its accepted booking lines. Customer refunds and owner payouts must reconcile to these allocations.
-- Use immutable financial entries with compensating adjustments; do not overwrite financial history to fix a refund.
-- Commission is confirmed at 25%; fee absorption and refund treatment remain D07.
-- Refund only approved refundable units. Dynamic rates mean a missed day should use its booked line value, not today's price or necessarily an average.
-- The admin refund review target is 1-2 days. Provider processing and customer bank credit are separate statuses.
-- Photo/video evidence and administrator review govern payout. Unresolved disputes/refunds block affected settlement.
-- Distinguish gateway payment capture, owner transfer, held settlement, released settlement, and actual bank settlement.
-- A manual bank-reference payout is an audited alternative path if needed. Prevent duplicate payout through gateway and manual modes.
-- Handle paid-after-expiry, missing webhooks, pending refunds, and ambiguous transfer results through reconciliation before retrying.
-- Tax logic has a separate extension point. Deferred GST is not a declared tax exemption.
-
-## 6. Design and content
-
-Follow the references' white backgrounds, blue/teal accents, large local imagery, prominent search bar, listing cards, map discovery, and dashboard structure. Build a shared design system with replaceable logo/assets.
-
-Required surfaces: public home/search/map/details/how-it-works; login/profile; owner onboarding/listings/request inbox; category-specific request and upload preview; cart decisions/deadline/checkout; advertiser campaigns/payments/evidence/disputes; owner campaigns/earnings; admin verification/listings/refunds/settlements/support/audit; and ticket views.
-
-Use explicit loading, empty, validation, denied, rejected, unavailable, awaiting-owner, held, awaiting-payment, processing, failed, expired, and partially-refunded states. Use “Request booking” where approval is required. Do not promise instant booking, verified playback, real inventory, audience reach, or brand adoption without evidence. Kerala launch scope is pending D11.
-
-Test data must be unmistakably demo data outside production. Client-owned or licensed production imagery, real listings, and accurate marketing copy are launch inputs.
+Explain before payment that admin confirmation is required, payment alone does not reserve inventory, and rejection leads to a refund. Show fixed price/unit and the accepted cancellation policy clearly. Avoid false instant-confirmation, playback or brand/adoption claims.
 
 ## 7. Phase roadmap
 
-Phases are ordered to expose a usable feature to manual review at each boundary. Detailed requirements and gate evidence belong in the corresponding handoff file. Build only policy-neutral pieces while a relevant decision is unresolved; do not declare the phase complete.
+Phase IDs and filenames are retained for continuity, but v0.7 planned scope replaces earlier phase instructions. All statuses remain NOT STARTED or DRAFT; this planning revision is not client UAT or application test evidence.
 
-| Phase | Scope | Main prerequisite |
+P05 proves review/capacity domain rules using explicitly labeled funded fixtures. P06 adds event delivery. P07 connects real sandbox checkout and manually performed/refund-recorded scenarios. Do not expose an unfunded or simulated booking as a real production request.
+
+| Phase | Deliverable | Prerequisite |
 | --- | --- | --- |
-| P00 | [Scope, policies, and design](docs/handoffs/P00-scope-design.md) | None; this draft is the starting input. |
-| P01 | [Engineering foundation](docs/handoffs/P01-foundation.md) | P00 architecture direction; unresolved unrelated business values may remain gated. |
-| P02 | [Authentication and account roles](docs/handoffs/P02-auth-roles.md) | P01. |
-| P03 | [Inventory, moderation, and media](docs/handoffs/P03-inventory-media.md) | P02. |
-| P04 | [Public discovery and dynamic pricing](docs/handoffs/P04-discovery-pricing.md) | P03. |
-| P05 | [Requests, reservations, and grouped cart](docs/handoffs/P05-booking-cart.md) | P04 and P02; foundational outbox from P01. |
-| P06 | [Notifications and support tickets](docs/handoffs/P06-notifications-support.md) | P05 lifecycle events and P02 identities. |
-| P07 | [Grouped checkout and financial ledger](docs/handoffs/P07-payments-ledger.md) | P05, P06; accepted pricing/financial contracts. |
-| P08 | [Campaign changes, evidence, and refunds](docs/handoffs/P08-campaigns-refunds.md) | P07. |
-| P09 | [Owner settlement and admin operations](docs/handoffs/P09-settlements-admin.md) | P08; provider/account readiness. |
+| P00 | [Scope, admin workflow, and design](docs/handoffs/P00-scope-design.md) | Source documents and latest client clarification. |
+| P01 | [Engineering foundation](docs/handoffs/P01-foundation.md) | P00 architecture direction; independent scaffolding may proceed while unrelated values remain gated. |
+| P02 | [Authentication and role permissions](docs/handoffs/P02-auth-roles.md) | P01. |
+| P03 | [Inventory, owner base prices, and media](docs/handoffs/P03-inventory-media.md) | P02. |
+| P04 | [Discovery and admin-controlled pricing](docs/handoffs/P04-discovery-pricing.md) | P03. |
+| P05 | [Cart, capacity, and admin review domain](docs/handoffs/P05-booking-cart.md) | P04; domain work uses explicit paid fixtures until P07 wires the verified gateway. |
+| P06 | [Notifications, admin reminders, and support](docs/handoffs/P06-notifications-support.md) | P05 event contracts and P02 identities; real payment triggers connected in P07. |
+| P07 | [Upfront grouped payment and rejection refunds](docs/handoffs/P07-payments-ledger.md) | P05-P06; real payment now activates the domain review queue. |
+| P08 | [Fulfillment, seven-day cancellation, and refunds](docs/handoffs/P08-campaigns-refunds.md) | P07. |
+| P09 | [Owner settlement and admin finance](docs/handoffs/P09-settlements-admin.md) | P08; provider account verification. |
 | P10 | [System validation and operational readiness](docs/handoffs/P10-hardening.md) | P02-P09 feature gates complete. |
-| P11 | [Client acceptance and production release](docs/handoffs/P11-launch.md) | P10 passed and all release-blocking decisions resolved. |
+| P11 | [Client acceptance and production release](docs/handoffs/P11-launch.md) | P10 and all active launch policy/provider gates resolved. |
 
-### P00 - Scope, policies, and design
+### P00 - Scope, admin workflow, and design
 
-Dependencies: None; this draft is the starting input.  
-Decision gates: D01-D15: resolve structural rules now; explicitly schedule remaining parameter/provider decisions before affected phase acceptance.
+Dependencies: Source documents and latest client clarification.  
+Decision gates: D01 confirmed 192-hour notice / 168-hour cutoff; D05 confirmed cancellation allocation; D06 manual refund workflow; D07 confirmed outcome-specific deductions; D08 release details. Payment-origin seven-day clocks, automatic rejection, manual refund task creation and approval-only reservation are settled.
 
 Deliver:
-- Approve the requirements traceability, glossary, role/permission matrix, and the distinction between campaign, booking, submitted cart, payment, and settlement.
-- Specify LED day exclusivity, theatre show/slot capacity, and mobile vehicle/slot/route behaviour. Define quote and reservation contracts.
-- Resolve timing and batch-payment examples, refund/fine policy, completion evidence, and payout authority using the decision register.
-- Create responsive designs for public discovery, all three booking forms, cart decision tracking, advertiser/owner/admin dashboards, tickets, and error/empty states. Use the supplied references and replaceable branding.
-- Document media limits, required owner verification details, service providers, preliminary India-only deployment diagram, and proposed performance/cost targets.
+- Approve the admin-mediated workflow, permission matrix, charged-cart/item definitions, deadline examples and refund eligibility matrix.
+- Document price ownership: owner supplies the initial base price; only admin changes a published rate after owner discussion. Preserve booked-price history.
+- Review all three category forms, upfront checkout, paid-awaiting-admin status, admin coordination notes, advertiser cancellation, refund tracking and owner fulfillment screens.
+- Implement the confirmed 192-hour notice, 168-hour review/cancellation cutoff and owner non-delivery exception; use the successful-payment clock and verify deadline rejection creates a manual refund task without moving money.
+- Review reference-led responsive designs, provider/data plan, media requirements and estimated startup operating costs.
 
 Test and validate:
-- P00-T01: Walk through one LED booking, two advertisers sharing theatre slots, and mobile slots sharing a route; identify every resource reserved.
-- P00-T02: Tabletop the user's day-1/day-5/day-6 cart example and payment deadline on day 7; include one rejection, no response, withdrawal, and all-rejected cases.
-- P00-T03: Test policy examples for earliest booking date in IST, approval near campaign start, partial delivery, pause fine, refund rounding, and mixed-owner settlement.
-- P00-T04: Review every supplied PDF requirement against the requirement map; review mobile/desktop designs and remove unsupported instant-booking or trust claims.
+- P00-T01: Walk through paid cart submission, manual admin-owner discussion and mixed item decisions without exposing requests to owner accounts.
+- P00-T02: Use dated IST examples to validate minimum notice and seven-day boundaries, including a day-seven rejection and a day-seven cancellation awaiting refund processing.
+- P00-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
+- P00-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
 
-Manual acceptance: User/client reviews workflows, visual direction, decision outcomes, and scope. Record accepted recommendations explicitly.
+Manual acceptance: Client reviews the new complete flow and designs; distinguish accepted rules from outstanding details.
 
-Exit gate: Scope and designs approved; no unresolved structural contradiction is passed to booking, pricing, or money implementation. Deferred values have named gates.
+Exit gate: Core workflow and designs accepted; unresolved parameters have explicit gates rather than invented defaults.
 
-Handoff: [P00-scope-design.md](docs/handoffs/P00-scope-design.md). P01: establish the repository, local setup, schema boundaries, and CI using the accepted architecture.
+Handoff: [P00-scope-design.md](docs/handoffs/P00-scope-design.md).
 
 ### P01 - Engineering foundation
 
-Dependencies: P00 architecture direction; unresolved unrelated business values may remain gated.  
-Decision gates: D10 for final providers; D12 for final sizes. Provider-neutral local scaffolding can proceed.
+Dependencies: P00 architecture direction; independent scaffolding may proceed while unrelated values remain gated.  
+Decision gates: D10 Indian data/compute verification; D12 sizes/budget; D16 map provider checks.
 
 Deliver:
-- Create a TypeScript/Next.js project with reusable UI foundations, separate business modules, validated configuration, reproducible dependency versions, and documented local setup.
-- Create migration-managed PostgreSQL/Supabase setup, storage adapter, worker/outbox skeleton, test fixtures, health checks, structured redacted logging, and CI.
-- Separate local, test, staging, and production settings. Define secret handling and India-region deployment configuration; do not deploy abroad for previews.
-- Establish schema boundaries for users, listings, resource capacity, quote versions, bookings, carts, ledger, tickets, and audit events.
+- Scaffold Next.js/TypeScript with reusable UI, clear business modules, configuration validation, supported pinned dependencies and documented local setup.
+- Establish PostgreSQL/Supabase migrations, worker/outbox, durable jobs, structured redacted logs, health checks, fixtures and CI.
+- Separate local/test/staging/production configuration and secret handling; select Indian compute/database/storage/backup/log destinations.
+- Create adapter boundaries for Razorpay, maps, SMTP, SMS and object storage; isolate provider place IDs from first-party listing coordinates.
+- Establish booking, payment, admin decision, refund, fulfillment and settlement as separate records and state transitions.
 
 Test and validate:
-- P01-T01: Fresh checkout can install, configure, build, and run the application and worker with documented steps.
-- P01-T02: CI runs lint, type checks, focused tests, and production build; invalid configuration fails clearly.
-- P01-T03: Migrations apply to an empty test database; worker jobs survive restart and do not create duplicate side effects.
-- P01-T04: Verify secrets are not included in browser bundles or logs; inspect region configuration and storage/log destinations.
+- P01-T01: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
+- P01-T02: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
+- P01-T03: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
+- P01-T04: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
 
-Manual acceptance: Run the local setup from the written guide and review a staging shell and test-account fixtures.
+Manual acceptance: Reviewer follows setup instructions and opens the application shell and representative fixtures.
 
-Exit gate: Reproducible foundation and CI pass; architecture/setup handoff is sufficient for another developer.
+Exit gate: Reproducible foundation, CI and recovery/setup documentation work.
 
-Handoff: [P01-foundation.md](docs/handoffs/P01-foundation.md). P02: implement authenticated sessions and enforced permissions.
+Handoff: [P01-foundation.md](docs/handoffs/P01-foundation.md).
 
-### P02 - Authentication and account roles
+### P02 - Authentication and role permissions
 
 Dependencies: P01.  
-Decision gates: D09 authentication modes/providers; D10 provider scope; D14 owner verification fields.
+Decision gates: D09 auth modes/providers; D14 owner verification fields.
 
 Deliver:
-- Integrate Supabase Auth for confirmed email login mode and phone OTP, logout, session expiry, profile management, account recovery, and business details.
-- Allow one account to switch advertiser/owner modes; no team-member feature. Link identifiers only through verified account-linking flows.
-- Implement owner verification submission/review and server-enforced advertiser, owner, and administrator access. Add database access policies and audited privileged actions.
-- Protect administrator access with a proposed MFA requirement recorded in the security design; implement rate limiting and abuse controls.
+- Implement Supabase authentication, phone OTP and selected email method, recovery, session expiry, verified identifier linking and business/profile details.
+- Allow one individual account to use advertiser and owner modes; separately grant platform administrator privileges.
+- Build owner verification and admin review with server-side checks, database policies, rate limits and privileged audit logs.
+- Explicitly forbid owner accounts from receiving customer request queues or accepting/rejecting bookings. Only admins perform booking decisions and subsequent published-price changes.
+- Protect admin accounts with appropriate MFA and least-privilege access as an engineering requirement.
 
 Test and validate:
-- P02-T01: Verify login, recovery, invalid/expired/reused OTP, session expiry, logout, and identifier-linking behaviour.
-- P02-T02: Attempt cross-account profile/booking reads, role escalation, direct API access, and database access outside policies.
-- P02-T03: Confirm unverified owners cannot publish inventory and UI role switching does not grant unauthorized privileges.
-- P02-T04: Exercise authentication messages using real provider test configuration; mocks alone do not close provider acceptance.
+- P02-T01: Exercise login, expired/reused OTP, recovery, logout, session expiry and duplicate/linked identities.
+- P02-T02: Try direct API/database cross-user reads, role escalation and owner attempts to approve/reject requests or change a published rate.
+- P02-T03: Confirm role switching grants no admin privileges and unverified owners cannot publish listings.
+- P02-T04: Validate real auth-delivery setup in allowed test accounts; distinguish provider-blocked checks from mock passes.
 
-Manual acceptance: Review advertiser/owner switching, owner verification, recovery, and admin access using separate accounts.
+Manual acceptance: Review advertiser/owner switching, verification and restricted owner/admin actions with separate accounts.
 
-Exit gate: Authentication and permissions work across server and database boundaries; delivery-provider dependencies are resolved or explicitly block acceptance.
+Exit gate: Authentication and permissions are enforced on server/database as well as UI.
 
-Handoff: [P02-auth-roles.md](docs/handoffs/P02-auth-roles.md). P03: owner inventory creation, moderation, and media handling.
+Handoff: [P02-auth-roles.md](docs/handoffs/P02-auth-roles.md).
 
-### P03 - Inventory, moderation, and media
+### P03 - Inventory, owner base prices, and media
 
 Dependencies: P02.  
-Decision gates: D03 mobile route policy; D14 inventory/media limits; D10 storage residency.
+Decision gates: D03 custom-route policy accepted; D04 initial price publication details; D14 media/slot limits; D16 Mappls verification.
 
 Deliver:
-- Build owner CRUD and admin publish/reject/suspend workflows for LED screens, theatre auditoriums/shows/ad slots, and mobile vehicles/routes/rotating slots.
-- Store map coordinates, address/locality, imagery, dimensions/resolution, base price inputs, operating hours, capacity, ad duration/frequency, and owner-declared audience estimates with attribution.
-- Support calendars, maintenance/blackout dates, recurring shows with exceptions, and multiple vehicle inventory. Preserve previously agreed bookings when editing listings.
-- Implement private ad/evidence upload primitives and public listing image handling, file validation, scanning/quarantine, safe previews, authorized downloads, and retention controls.
-- Create clearly marked non-production fixtures for all categories and owner verification scenarios.
+- Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
+- Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication; snapshot them on paid bookings.
+- Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
+- Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
+- Implement creative/evidence upload foundations: file type/size checks, scan/quarantine, safe preview, private access, expiring downloads and retention controls. Preserve booked commitments when inventory changes.
+
+- Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
 
 Test and validate:
-- P03-T01: Check listing approval and suspension permissions, cross-owner edits, and exposure of draft/unverified listings.
-- P03-T02: Verify theatre show capacity and mobile slot/route representation; test recurring-calendar exceptions and overlapping blackout dates.
-- P03-T03: Reject spoofed file types, oversized/unsupported/corrupt files, and unauthorized downloads; verify expiring links and quarantine.
-- P03-T04: Ensure capacity reduction, vehicle reassignment, or listing deletion cannot silently invalidate existing commitments.
+- P03-T01: Verify draft/verified/published access; require admin approval of owner-specified ad duration, plays per show/day and operating hours. Reject invalid service values and prove owner API edits cannot change published price or paid service commitments.
+- P03-T02: Test show and rotating-slot capacity, blackout overlap and the no-other-approved-bookings custom-route condition across overlapping vehicle dates.
+- P03-T03: Reject spoofed/corrupt/oversized uploads and unauthorized downloads; verify scanning, expiring links and safe preview.
+- P03-T04: Check representative Kerala address/pin accuracy, provider failures and price audit history; reject capacity/route edits conflicting with committed service.
 
-Manual acceptance: Create, review, publish, edit, and suspend one listing of each category; review image/video previews and location coordinates.
+- P03-T05: Validate duration, plays and operating hours against available service capacity; preserve paid service terms across listing edits and reject incompatible creative metadata before checkout.
 
-Exit gate: All three inventory types are accurately representable and access-controlled; unresolved resource semantics block the affected module.
+Manual acceptance: Owner creates one listing of each category; admin verifies it, records discussion and changes a rate; review uploads and map coordinates.
 
-Handoff: [P03-inventory-media.md](docs/handoffs/P03-inventory-media.md). P04: connect approved inventory to public search and versioned quotes.
+Exit gate: All categories, owner base input, protected admin price updates and secure media are reviewable.
 
-### P04 - Public discovery and dynamic pricing
+Handoff: [P03-inventory-media.md](docs/handoffs/P03-inventory-media.md).
+
+### P04 - Discovery and admin-controlled pricing
 
 Dependencies: P03.  
-Decision gates: D04 pricing contract; D11 geography; D01 date filter semantics.
+Decision gates: D04 initial rate publication/effective-time details; D01 confirmed timestamp boundaries; D11 Kerala launch and D16 Mappls accepted.
 
 Deliver:
-- Build homepage, category/city/locality/date/budget search, featured inventory, detail pages, map/list views, and accessible responsive navigation.
-- Implement owner base prices and a versioned deterministic demand-pricing service with approved demand signals, locality scope, limits, and cold-start fallback.
-- Generate reproducible dated line-item quotes showing billing unit, price breakdown, total, and validity. Persist quote inputs/version for later reconciliation.
-- Prevent rejected/draft listings from discovery, misleading availability claims, manipulation through repeated requests, and repricing of protected contract snapshots.
+- Build Kerala-first homepage/search/map/details, featured inventory, city/locality/category/date/budget filters, responsive navigation and clear availability labels. Details include listing images, dimensions/resolution, pin/address, owner-attributed audience estimates, published unit prices and an availability calendar.
+- Display fixed current admin-published day/show/slot rates; calculate totals from dated units. No demand or nearby-screen price adjustment service.
+- Create immutable quote/paid-line price snapshots, rate versions and customer-visible price-change checks before payment; admin changes affect future quotes only.
+- Use Mappls markers/clustering and owner-defined route display through the provider adapter; pricing uses listing rates and booking units, not map traffic/demand.
+- Keep geography extensible for later states while enforcing Kerala launch inventory eligibility.
+
+- Provide complete source-blueprint listing details and calendar states; keep state selection Kerala-only at launch and display no fake audience or live-availability claims.
 
 Test and validate:
-- P04-T01: Check search/filter combinations, pagination, map/list agreement, out-of-service inventory, and no-results/loading/provider-failure states.
-- P04-T02: Use deterministic pricing fixtures for low/high demand, nearby categories, sparse data, duplicate demand, bounds, and rounding.
-- P04-T03: Verify same-day/date-range totals and show/slot/day units; ensure changing current rates cannot modify a saved quote protected by policy.
-- P04-T04: Review keyboard use, screen-reader labels, mobile layouts, and meaningful rendering of public listing pages.
+- P04-T01: Verify search/filter/map/detail agreement, supported geography, clustering, empty/loading/quota failure states and restricted API keys.
+- P04-T02: Check totals for days/shows/slots, quantities and paise rounding; changing request counts, bookings or nearby prices must not change a published rate.
+- P04-T03: Change the published rate before checkout and require an updated visible quote; after payment prove admin edits never reprice the submitted item.
+- P04-T04: Review keyboard/screen-reader flow and mobile layouts; verify switching the map adapter does not alter booking or price data.
 
-Manual acceptance: Review discovery on phone and desktop against the references; review worked pricing examples with the client.
+- P04-T05: Check image preview, dimensions/resolution, location pin, dated availability, price unit and attributed audience estimate on phone and desktop; date filters and the calendar must agree.
 
-Exit gate: Discovery is reviewable with sample data; formula and price-lock policy are accepted and demonstrated.
+Manual acceptance: Compare discovery with UI references and verify an owner's base price, admin price revision and booked-price protection.
 
-Handoff: [P04-discovery-pricing.md](docs/handoffs/P04-discovery-pricing.md). P05: submit quoted bookings and reserve capacity under concurrent approvals.
+Exit gate: Kerala discovery and fixed pricing work; no obsolete dynamic-pricing behaviour remains.
 
-### P05 - Requests, reservations, and grouped cart
+Handoff: [P04-discovery-pricing.md](docs/handoffs/P04-discovery-pricing.md).
 
-Dependencies: P04 and P02; foundational outbox from P01.  
-Decision gates: D01-D04 must be settled for complete acceptance.
+### P05 - Cart, capacity, and admin review domain
+
+Dependencies: P04; domain work uses explicit paid fixtures until P07 wires the verified gateway.  
+Decision gates: D01 confirmed 192-hour notice / 168-hour cutoff; D05 confirmed cancellation allocation; D06 timely eligibility/manual processing interaction. Upfront payment, seven-day clocks, automatic expiry with manual refunds and approval-only reservations are confirmed.
 
 Deliver:
-- Build category-specific request forms, creative preview, submitted cart, per-item decisions, owner request inbox, and approval/rejection reasons.
-- Enforce minimum booking notice and approved response cutoff on the server using documented IST date semantics.
-- Reserve whole-screen days or the selected theatre/mobile capacity atomically at approval; enforce mobile route compatibility.
-- Implement batch state derivation: early approvals stay reserved, rejected items do not charge, and the 24-hour payment window begins exactly once when all items have a qualifying terminal decision.
-- Implement approved withdrawal/expiry rules, immutable submitted membership if accepted, deadline jobs, and events for notifications. Payment eligibility must not depend on worker punctuality.
+- Build category request forms, ad preview and a cart containing all requested bookings; freeze submitted contents and route additions to a new cart.
+- Implement paid-awaiting-admin review, admin decisions, private coordination notes and seven-day due dates from payment. Automatically reject undecided requests at deadline and create a manual refund task. Owners have no direct request/decision controls, and no job sends refund money.
+- Implement resource allocations for LED days, theatre show slots and mobile vehicle slots; leave paid-pending requests unreserved and allocate capacity only in an atomic admin approval transaction.
+- Apply custom-route eligibility across overlapping approved vehicle bookings; admin records the owner-agreed route and cannot change an existing commitment through another request.
+- Persist decision/cancellation events and refund obligations. Decisions are independent per item; neither waits for every item nor opens a new checkout window.
+
+- Apply plan sections 3.6-3.8: explicit dated request units, atomic whole-line decisions, immutable checkout/creative snapshots and payment-time notice verification without reapplying notice at approval.
 
 Test and validate:
-- P05-T01: Run concurrent owner approvals and prove inventory cannot be oversold for any category, including bookings across multiple dates/shows.
-- P05-T02: Verify day-1/day-5/day-6 approvals produce the expected final 24-hour window; also test reordered/repeated decisions and simultaneous last decisions.
-- P05-T03: Test all rejected, mixed decisions, unanswered owners, withdrawals, expired holds, and changing the earliest date under the accepted policy.
-- P05-T04: Test midnight IST boundaries, eight-day exclusion, stale quote/availability, worker downtime/restart, and attempts to reserve one's own listing if restricted by the accepted policy.
+- P05-T01: Reject unpaid/malicious transitions to paid review; test admin-only decisions, private coordination notes and no owner exposure of raw requests.
+- P05-T02: Race requests/admin decisions across multiple days/shows/vehicle slots; prove no approved oversell or incompatible route commitment with no reservation until admin approval; competing paid requests must not acquire overlapping approved capacity.
+- P05-T03: Verify frozen membership, new cart for additions, per-item decisions, all rejected/mixed accepted states and preserved paid amounts.
+- P05-T04: Test exact seven-day boundaries, automatic rejection and manual refund tasks, late acceptance blocked despite worker lag, and timely cancellation-versus-approval/expiry races with real database fixtures.
 
-Manual acceptance: Use separate advertiser and owner accounts to reproduce multi-owner approval timing and inspect reserved versus available capacity.
+- P05-T05: Capture payment on 1 October at 10:00 IST; accept service starting 9 October at 10:00 and reject an earlier start. Permit approval shortly before 8 October at 10:00, reject approval at/after that instant, and do not reapply the 192-hour notice at approval. Cover daily operating starts and theatre show times.
+- P05-T06: Verify inclusive LED dates, explicit theatre shows and mobile dated slots; reject partial silent acceptance and edited submitted assets. Race line cancellation against approval/expiry and release only actual reservations.
 
-Exit gate: Booking, reservation, and cart lifecycle tests pass against the real database; no unbounded unresolved hold policy remains.
+Manual acceptance: Admin coordinates and decides a funded fixture cart; advertiser sees per-item progress while owner cannot access the intake queue.
 
-Handoff: [P05-booking-cart.md](docs/handoffs/P05-booking-cart.md). P06: deliver and track business notifications and support requests for these lifecycle events.
+Exit gate: Domain behaviour and concurrency are proven with fixtures; actual payment submission and rejection refunds remain explicitly assigned to P07/P08.
 
-### P06 - Notifications and support tickets
+Handoff: [P05-booking-cart.md](docs/handoffs/P05-booking-cart.md).
 
-Dependencies: P05 lifecycle events and P02 identities.  
-Decision gates: D09 provider/sender selection; D10 provider processing scope.
+### P06 - Notifications, admin reminders, and support
+
+Dependencies: P05 event contracts and P02 identities; real payment triggers connected in P07.  
+Decision gates: D09 delivery providers; D01 confirmed 192-hour notice / 168-hour cutoff. Payment-origin deadlines, automatic rejection and manual refund task creation are confirmed.
 
 Deliver:
-- Deliver required booking, approval, payment-deadline, campaign, and ticket updates through in-app, email, and SMS channels.
-- Use persisted events, deduplication, retry/backoff, delivery status, failure visibility, and server-side deadlines; notification failure never extends a booking deadline.
-- Implement advertiser/owner tickets linked to bookings, attachments, admin replies, status, and internal notes hidden from customers.
-- Configure domain authentication and required SMS provider onboarding/templates. Reuse providers for auth and business messages where suitable, while keeping the flows distinct.
+- Deliver payment-received, admin-review, acceptance/rejection, cancellation, refund, fulfillment and support events through in-app/email/SMS as appropriate to role.
+- Send admin deadline reminders and notifications for deadline rejection and pending manual refunds at seven days. Show actual advertiser cancellation eligibility and refund status.
+- Use durable outbox delivery, idempotency, retry/backoff, bounce/failure tracking and accurate links; notification delays never silently extend eligibility.
+- Implement booking-linked support tickets, attachments, admin replies and private internal notes. Customer requests and creatives are not automatically forwarded to owners.
+- Use ordinary Gmail/other recipient delivery with configured SMTP/SMS providers; no waiting-to-pay or 48-hour countdown campaigns.
+
+- Use ticket states open/in-progress/resolved/closed with audited replies and private notes; show notification delivery status separately from booking state. Scheduled-start notices never claim verified playback.
 
 Test and validate:
-- P06-T01: Check event-to-recipient/channel mapping, duplicate events, bounced email, SMS failures, provider timeouts, and worker recovery.
-- P06-T02: Verify notification content, IST deadline display, links, and sensitive-data redaction.
-- P06-T03: Attempt cross-account ticket access and internal-note disclosure; test safe attachments and support status transitions.
-- P06-T04: Verify actual delivery with provider test accounts and permitted recipient devices; record any blocked external checks.
+- P06-T01: Check recipient/channel routing and confirm owners receive neither raw booking requests nor customer/admin private notes.
+- P06-T02: Test duplicate events, email bounce, SMS timeout and worker recovery without lost/duplicate business actions.
+- P06-T03: Verify IST timestamps, admin due/overdue reminders, paid-awaiting-review wording and notifications after actual refund outcome.
+- P06-T04: Attempt cross-account ticket/media access; receive real provider test messages and record any blocked external validation.
 
-Manual acceptance: Receive a booking approval and deadline reminder on website/email/SMS; open and resolve a ticket across user/admin accounts.
+- P06-T05: Start a scheduled campaign window with no evidence: notify only its scheduled status, never observed playback or verified completion. Confirm resolved tickets retain authorized reply history and private notes stay private.
 
-Exit gate: Required notifications and support workflows pass, with provider prerequisites and test evidence recorded.
+Manual acceptance: Receive paid/request-decision/refund notices, review an admin due alert and resolve a ticket using separate accounts.
 
-Handoff: [P06-notifications-support.md](docs/handoffs/P06-notifications-support.md). P07: collect one payment for accepted cart items and allocate the money reliably.
+Exit gate: Required event delivery and support are correct; provider-backed delivery evidence is recorded.
 
-### P07 - Grouped checkout and financial ledger
+Handoff: [P06-notifications-support.md](docs/handoffs/P06-notifications-support.md).
 
-Dependencies: P05, P06; accepted pricing/financial contracts.  
-Decision gates: D07 fee/commission basis; D13 Razorpay account capability; D15 receipt/tax scope; D01-D02 deadline semantics.
+### P07 - Upfront grouped payment and rejection refunds
+
+Dependencies: P05-P06; real payment now activates the domain review queue.  
+Decision gates: D07 confirmed outcome-specific deductions; D13 Razorpay; D15 receipt scope; D02 payment-success anchor and D17 unreserved paid-pending requests are confirmed.
 
 Deliver:
-- Create one server-priced Razorpay order for the accepted cart subtotal and expose supported UPI/card/net-banking checkout methods.
-- Freeze item allocations and 25% commission snapshots according to the accepted policy; represent all money in integer paise.
-- Implement verified webhooks, idempotent processing, an append-only financial journal, payment attempts, receipts, payment status, and provider reconciliation.
-- Treat browser success as provisional until verified; handle duplicate/late payments, abandoned checkout, expiry races, and paid-but-unreconciled states without double booking.
-- Add a separate tax calculation interface and future tax breakdown area; no invented GST calculation or GST invoice claim.
+- Create exactly one server-priced Razorpay order for the entire submitted cart, containing the summed value of all valid items before any booking decision. Store internal item allocations; do not create a separate checkout/order per item. Customer pays once through enabled UPI/card/net-banking methods.
+- Use verified captured payment/webhooks to atomically allocate the payment to all submitted booking lines and enter unreserved paid-awaiting-admin review. Set both seven-day clocks from verified payment success; confirmation/reservation occurs only after admin approval.
+- Persist integer-paise immutable ledger entries, price and 15% commission policy snapshots, attempts and receipts; pending funds are liabilities, not earned owner payouts.
+- Create an item-specific manual refund task on rejection. Provide admin processing/completion fields for amount, deductions, reference, evidence and time; admin marks refunded after completing it. Deduplicate tasks and completion records, reconcile with actual transactions and prohibit automated refund API calls.
+- Handle missing callbacks, duplicate/out-of-order webhooks, extra successful attempts, allocation failure and late payment safely. Keep tax calculation modular and receipt naming accurate.
+
+- Provide downloadable account-scoped payment receipts and completed-refund confirmations. Model one external refund transaction with balanced item allocations; record late/extra captures as manual exceptions without automatic refunds.
 
 Test and validate:
-- P07-T01: Run mixed-owner/mixed-category cart payments and verify accepted items only, exact allocation totals, rounding, and one payment confirming all included bookings atomically.
-- P07-T02: Test tampered totals, forged/replayed/out-of-order webhooks, multiple clicks, multiple successful attempts, and lost callback/webhook delivery.
-- P07-T03: Test payment arriving exactly at/after the deadline, worker failure, provider timeout, and held inventory being unavailable; reconcile or refund safely under an explicit exception policy.
-- P07-T04: Verify receipt ownership, audit journal consistency, settlement ineligibility before completion, and notifications after confirmed payment.
+- P07-T01: Pay a multi-owner/multi-category cart before any decisions; prove captured total equals all paid lines and exactly one submission enters admin review without reserving inventory; delayed/replayed webhooks do not restart its seven-day clocks.
+- P07-T02: Accept one item, reject another and expire a still-undecided item at day seven; assert refund tasks appear without a refund API call. Record a manually completed sandbox refund and reconcile its item amount/reference. Test duplicate tasks/references, incomplete completion data, unauthorized edits and failed or uncertain external outcomes.
+- P07-T03: Test forged signatures, manipulated totals, repeated clicks, duplicate captures, lost webhooks, provider timeout and concurrent payment/rejection/cancellation events.
+- P07-T04: Verify failed payments create no funded review/confirmed booking, and payment success never equals admin approval or owner settlement. For completed Rs 10,000 service, assert Rs 8,500 owner and Rs 1,500 gross Pixlwave commission with gateway costs charged only against the latter.
 
-Manual acceptance: Complete sandbox checkout for a cart with accepted and rejected items, inspect customer receipt and admin allocation ledger, then reproduce failed payment.
+- P07-T05: Verify one gateway order for a mixed cart, immutable receipt totals and authorized downloads; record one manual partial/grouped refund and reconcile its allocation without counting the transaction multiple times.
+- P07-T06: Expire a checkout across an IST date boundary and deliver a late capture/webhook: preserve captured money, avoid restarting deadlines or confirming an ineligible booking, and create a manual exception task. Test valid price snapshots when an admin changes rates.
 
-Exit gate: Sandbox payment and reconciliation evidence passes; no live checkout until P11 authorization and provider readiness.
+Manual acceptance: Sandbox-pay a cart upfront, accept/reject items as admin and inspect the customer's payment receipt, item refunds and financial ledger.
 
-Handoff: [P07-payments-ledger.md](docs/handoffs/P07-payments-ledger.md). P08: operate paid campaigns, collect evidence, and handle approved changes/refunds.
+Exit gate: Real sandbox checkout, funded admin submission and rejected-item refund/reconciliation evidence passes. Live money remains a P11 gate.
 
-### P08 - Campaign changes, evidence, and refunds
+Handoff: [P07-payments-ledger.md](docs/handoffs/P07-payments-ledger.md).
+
+### P08 - Fulfillment, seven-day cancellation, and refunds
 
 Dependencies: P07.  
-Decision gates: D05 pause/fine policy; D06 cancellation/refund units; D08 completion/dispute rules; D14 evidence requirements.
+Decision gates: D05 confirmed cancellation allocation; D06 manual refund recording and exception details; D07 accounting verification; D08 payout review. Both seven-day clocks start at successful payment.
 
 Deliver:
-- Build campaign dashboards with truthful scheduled/owner-reported live/completed status; no assertion of verified physical playback from a calendar alone.
-- Implement approval-based extensions, creative replacements, pauses/resumption, and paid cancellations with approved capacity and price effects.
-- Collect owner photo/video evidence and advertiser disputes; give admin controlled completion/fraud/non-delivery decisions with reasons and audit history.
-- Implement full/partial refunds for undelivered units, approved fines and commission adjustments, 1-2-day admin review tracking, and separate gateway processing status.
-- Add compensating journal entries, item-level refund allocations, safe refund retries, and payout blocking while disputes/refunds are unresolved.
+- Build confirmed campaign schedules, owner service/evidence records and admin completion/non-delivery decisions. Scheduled/live-window notifications indicate dates only, never verified playback. Completion requires admin evidence verification; no physical playback control.
+- Allow advertiser cancellation only before successful payment + seven days. Refund 95% of the cancelled booking amount; allocate 5% to Pixlwave inclusive of Razorpay processing charges, with no separate processing deduction or added fulfillment commission. Preserve the request timestamp, queue the refund for admin and mark refunded only after admin records its completed payment reference.
+- Block ordinary cancellation/refund eligibility after the cutoff while retaining owner inability/non-delivery as the business exception. Preserve eligibility for timely requests whose manual processing completes later.
+- Refund undelivered daily units or theatre show/slot units at the booked rate; support partial delivery, evidence and admin decision reasons.
+- Remove pause/resume, campaign extensions and in-place rescheduling/change actions from scope. Later advertising dates use a separate booking. Keep fulfillment, refund and settlement status separate.
+
+- Review unit-linked evidence before admin-verifying completion. Use booked prices for fully missed units; let admin manually determine partial-delivery refunds with a reason and evidence. Record applicable actual Razorpay charges separately, deduct them once and apply no owner-failure penalty.
 
 Test and validate:
-- P08-T01: Test competing extension requests, rejected changes preserving original contracts, and payment-required extensions not becoming active prematurely.
-- P08-T02: Test partial delivery across dynamic-price days/shows, multiple cart owners, penalty caps, integer rounding, cumulative refund limits, and refunded commission treatment.
-- P08-T03: Test duplicate admin actions, failed/pending refund responses, reversal prerequisites, and concurrent refund versus settlement attempts.
-- P08-T04: Verify evidence authorization, fake/missing evidence review, advertiser disputes, and inability of owners to approve their own payout.
+- P08-T01: Test cancellation immediately before/at/after seven-day expiry, including an accepted booking and a timely cancellation manually processed after the cutoff. Assert eligibility is preserved and no automated refund occurs.
+- P08-T02: For manual rejection, deadline rejection and owner non-delivery after day seven, verify net refund equals the affected paid amount less applicable actual Razorpay processing charges. No 5% cancellation fee or other penalty applies; admin records manual completion and duplicate deductions are blocked.
+- P08-T03: Verify Rs 10,000 cancellation refunds Rs 9,500 and allocates Rs 500 to Pixlwave inclusive of processing charges, with no additional fee or owner payout on the cancelled amount. Test partial-cart allocation, paise rounding, cumulative refund limits, duplicate refunds, gateway failure and refund-versus-payout races.
+- P08-T04: Verify absence of pause/change endpoints, authorization on evidence, truthful fulfillment status and continued access to valid non-delivery claims without a 48-hour expiry.
 
-Manual acceptance: Run completion with evidence, owner non-delivery, partial refund, advertiser cancellation, and accepted/rejected pause/extension scenarios.
+- P08-T05: Separate scheduled status, owner-reported completion and admin verification. For partial delivery, require an authorized admin-entered refund assessment, reason and unit-linked evidence; enforce remaining paid-value limits and audit changes without automatically calculating an hours/plays refund.
 
-Exit gate: All agreed campaign policies and refund accounting pass; review time is not displayed as guaranteed bank-credit time.
+Manual acceptance: Run timely cancellation, rejected late cancellation, late owner non-delivery, partial refund and completion with evidence.
 
-Handoff: [P08-campaigns-refunds.md](docs/handoffs/P08-campaigns-refunds.md). P09: release only reconciled eligible balances and complete the admin finance workspace.
+Exit gate: Accepted seven-day rules and exception are enforced; refund execution and banking time are distinguished from eligibility.
 
-### P09 - Owner settlement and admin operations
+Handoff: [P08-campaigns-refunds.md](docs/handoffs/P08-campaigns-refunds.md).
 
-Dependencies: P08; provider/account readiness.  
-Decision gates: D07 financial allocation; D08 payout eligibility; D13 gateway/manual modes.
+### P09 - Owner settlement and admin finance
+
+Dependencies: P08; provider account verification.  
+Decision gates: D07 accounting verification; D08 completion approval details; D13 manual payout workflow.
 
 Deliver:
-- Implement owner earnings and payout status, admin completion review, release action, commission/refund reports, outstanding liabilities, and audit search.
-- Integrate Razorpay Route linked-account onboarding and approved deferred-settlement flow; distinguish transfer creation, release, and actual settlement.
-- Implement controlled manual bank-reference recording only if needed, with evidence and checks that exclude duplicate/in-flight gateway payment.
-- Reconcile payments, transfer holds, reversals, refunds, gateway fees, platform revenue, and owner balances; record exceptions for human resolution.
-- Prevent bank-detail changes, disputes, incomplete evidence, or unresolved money movements from silently bypassing payout checks.
+- Provide admin reports for paid-pending funds, rejected/cancelled liabilities, accepted commitments, completed service, refunds, platform revenue and owner earnings.
+- Release only an accepted, fulfilled booking's reconciled owner balance after admin review; neither day seven nor a removed 48-hour timer triggers payout.
+- Implement admin-only manual owner transfer records after fulfillment verification, with beneficiary, amount, bank reference, proof, operator and timestamps. Do not integrate Route or any automatic payout API.
+- Require admin to record the completed external bank transfer before showing settled. Guard against duplicate references/settlement records; uncertain transfers remain unresolved until manually reconciled.
+- Provide exception reconciliation for missing payment evidence, failed or uncertain manual transfers, post-settlement owner non-delivery and manual refunds. Preserve audited corrections; do not automatically debit an owner or issue a second transfer.
+
+- Store one manual external transaction with balanced eligible line allocations. Record ineligible or uncertain external transfers as audited reconciliation exceptions without falsely marking service verified.
 
 Test and validate:
-- P09-T01: Verify a mixed-owner cart settles each eligible booking independently after completion, without waiting for unrelated owners unless policy requires it.
-- P09-T02: Test duplicate release, timeout/retry, failed/reversed transfer, missing owner onboarding, refund before/after transfer, and webhook replay.
-- P09-T03: Race manual payout recording against automated payout and refund; assert no double payment or release of disputed balances.
-- P09-T04: Reconcile provider test transactions to journal and reports; verify admin permissions and auditable changes.
+- P09-T01: Prove paid-pending, rejected, cancelled, unfulfilled and disputed items cannot be marked eligible for normal owner settlement in the website; eligible completed items settle independently within a mixed cart. Record any erroneous external transfer as an exception, not an approved payout.
+- P09-T02: Test duplicate manual transfer records, missing bank reference/proof, unverified beneficiary, failed or uncertain transfer, unauthorized status changes and concurrent admin edits. Assert no payout/Route API is called.
+- P09-T03: Race owner non-delivery refund against payout; account for refunds discovered after settlement without silently creating a negative recoverable balance.
+- P09-T04: Reconcile 85% owner share and 15% gross commission with Razorpay processing charges deducted from Pixlwave's commission on completed service. Verify manual refunds/transfers against bank references and enforce admin permissions and audit history.
 
-Manual acceptance: Review owner earnings, release one eligible payout through sandbox-supported flows, block a disputed payout, and rehearse manual fallback if selected.
+- P09-T05: Reconcile one bank transfer covering multiple eligible lines for the same owner without duplicate counting. Record an erroneous external transfer as an exception and block normal settlement/fulfillment status changes.
 
-Exit gate: Every paid/refunded/settled amount reconciles or appears as an explicit tracked exception; payout prerequisites are documented.
+Manual acceptance: Review pending funds, settle one fulfilled booking, block an unfulfilled booking and rehearse failure/manual recovery paths.
 
-Handoff: [P09-settlements-admin.md](docs/handoffs/P09-settlements-admin.md). P10: execute system-wide reliability, security, accessibility, and recovery validation.
+Exit gate: Eligible payout records require fulfillment verification and admin-recorded transfer completion. Recorded movements reconcile with provider/bank references; the website neither creates nor controls external bank transfers.
+
+Handoff: [P09-settlements-admin.md](docs/handoffs/P09-settlements-admin.md).
 
 ### P10 - System validation and operational readiness
 
 Dependencies: P02-P09 feature gates complete.  
-Decision gates: D10 residency evidence; D12 agreed capacity/service targets; remaining provider/retention decisions.
+Decision gates: Remaining target/provider checks in D10, D12-D17 and current deadline/refund policy gates.
 
 Deliver:
-- Run full regression across advertiser, owner, and admin workflows on phone/tablet/desktop and supported browsers.
-- Validate security boundaries, accessible UI, query/index performance, upload handling, reservation contention, and background queue capacity.
-- Configure monitoring and alerts for checkout errors, overdue decisions, stuck holds, queue backlog, failed messages/refunds/payouts, and reconciliation gaps.
-- Exercise Indian-region backups/restoration, deploy/migration recovery, worker crashes, provider outages, and storage/retention cleanup.
-- Produce measured cost/capacity estimate and operations runbook, including provider escalation and financial incident response.
+- Run integrated advertiser/admin/owner regression on supported phone/tablet/desktop browsers.
+- Validate access controls, uploads, webhook security, map quotas, accessibility, load and multi-user concurrency.
+- Monitor paid-pending requests, approved capacity, seven-day workload, automatic rejection jobs and manual refund queues, cancellation/refund liabilities, worker lag and failed payouts.
+- Exercise Indian-region backup/restore, migrations, deployment recovery, worker/provider outages and reconciliation of money movements since backup.
+- Produce measured capacity/cost results and operator runbooks for manual coordination, missed deadlines, non-delivery/refund and settlement exceptions.
+
+- Restore manual refund and bank-transfer journals as well as payment events; reconcile external transactions performed after the backup before operators act on restored pending tasks.
 
 Test and validate:
-- P10-T01: Run production-like end-to-end journeys and simultaneous reservation/payment/refund scenarios against representative data.
-- P10-T02: Run authorization/accessibility checks and targeted security review of uploads, sessions, webhooks, rate limits, and privileged actions.
-- P10-T03: Measure latency/error rates under the agreed load; verify no oversell and no duplicate financial movement.
-- P10-T04: Restore a backup into an isolated permitted environment and reconcile transactions since the recovery point before accepting readiness.
+- P10-T01: Run production-like upfront-payment/admin-decision journeys across all categories, including mixed refunds and concurrent last-slot attempts.
+- P10-T02: Verify owners cannot receive/decide requests or edit published rates; test private notes, files, sessions, signed webhooks and safe logs.
+- P10-T03: Simulate outage at the seven-day deadline: block late acceptance, recover automatic rejection and manual refund task creation promptly and exactly once without calling refund or payout APIs, preserve timely cancellation records and retain unresolved obligations.
+- P10-T04: Restore into an isolated Indian environment, reconcile newer provider events, and measure agreed load/accessibility targets.
 
-Manual acceptance: Perform user/client regression review, inspect alerts/reports, and rehearse an outage and restore using only the handoff/runbook.
+- P10-T05: Restore a backup predating a manually completed refund/owner transfer, then reconcile external evidence; ensure stale pending tasks warn operators and cannot become duplicate normal completion records.
 
-Exit gate: No unresolved critical/high-severity defects; required targets and recovery checks pass with evidence, and remaining accepted issues have owners.
+Manual acceptance: User/client performs regression and rehearses overdue review, gateway failure and backup recovery using written runbooks.
 
-Handoff: [P10-hardening.md](docs/handoffs/P10-hardening.md). P11: perform final client acceptance, production configuration, and controlled release.
+Exit gate: Required targets pass with evidence, no critical/high unresolved defects and operational responsibility is assigned.
+
+Handoff: [P10-hardening.md](docs/handoffs/P10-hardening.md).
 
 ### P11 - Client acceptance and production release
 
-Dependencies: P10 passed and all release-blocking decisions resolved.  
-Decision gates: D01-D15 closed or explicitly outside enabled launch scope without dropping required end-of-development features.
+Dependencies: P10 and all active launch policy/provider gates resolved.  
+Decision gates: Current D01-D17 statuses; superseded proposals do not block launch, but unanswered active monetary rules do.
 
 Deliver:
-- Obtain final acceptance for all three inventory categories, approval/cart behaviour, pricing, cancellation/refund rules, owner settlement, and UI.
-- Configure India-only production infrastructure and verified provider accounts, domain, TLS, private uploads, backups, alert recipients, and operational ownership.
-- Complete production owner onboarding/content, replace demo inventory, and finalize client-approved terms, privacy, support, cancellation, and receipt/tax scope.
-- Perform authorized controlled live payment/refund/settlement verification where provider test mode cannot prove production operation.
-- Publish final setup/release/recovery runbooks, training walkthroughs, credential ownership references, known issues, and monitoring schedule.
+- Obtain final approval for admin-only decisions, upfront cart payment, fixed pricing, seven-day cancellation/refund policy, owner non-delivery exception and all category workflows.
+- Configure Indian production servers/data, providers, domain/TLS, safe uploads, backups, alerts and Mappls production access.
+- Publish real verified Kerala listings and admin-approved rates; remove demo content and train admins for the seven-day coordination workload.
+- Complete operational ownership, support, cancellation/refund disclosures, receipt/tax scope and owner onboarding/settlement arrangements.
+- Perform expressly authorized controlled live payment/refund/settlement checks where needed, then deliver release/recovery/training handoffs.
+
+- Validate the source coverage matrix and manual-operation disclosures, including download receipts, service-window wording and every replaced blueprint workflow.
 
 Test and validate:
-- P11-T01: Run production smoke tests for public discovery, auth, owner access, uploads, booking eligibility, support, and restricted admin routes.
-- P11-T02: Verify exact deployed revision, configuration, migration state, region evidence, health/alerts, backup availability, and rollback procedure.
-- P11-T03: Record controlled live transaction reconciliation only after explicit authorization for real charges/payouts; never mark sandbox evidence as live evidence.
-- P11-T04: Confirm no demo claims, exposed secrets, test keys, mock payment behaviour, or unresolved launch-blocking policy gates remain.
+- P11-T01: Production smoke-test public discovery, fixed rates, auth, category cart, payment, paid-review status, admin decisions, refunds and role restrictions.
+- P11-T02: Verify deployed revision/migrations, India data locations, provider keys, map settings, alerts and recoverability.
+- P11-T03: Record approved live transaction reconciliation separately from sandbox evidence; confirm decisions/eligibility match the displayed seven-day policy.
+- P11-T04: Inspect UI/API for obsolete owner approval, post-approval checkout, payment countdown, completion countdown, dynamic pricing and pause/change controls.
 
-Manual acceptance: User/client signs off on the release checklist and advertiser/owner/admin walkthroughs; named operator accepts ongoing support and finance responsibility.
+- P11-T05: Walk through every blueprint coverage row with the client; verify delivered replacement behavior, excluded playback/chat/pause flows and downloadable receipts against the released revision.
 
-Exit gate: Authorized release is healthy and accepted, evidence and final handoff are complete, and all required features are delivered.
+Manual acceptance: Client signs off on advertiser/admin/owner walkthroughs; named operators accept review, refund, support and payout duties.
 
-Handoff: [P11-launch.md](docs/handoffs/P11-launch.md). Operate and monitor; prioritize future enhancements through a separately approved backlog.
+Exit gate: Authorized production release is accepted and healthy with current handoffs and all required categories delivered.
 
-## 8. Shared testing and acceptance standards
+Handoff: [P11-launch.md](docs/handoffs/P11-launch.md).
 
-### Every phase
+## 8. Shared testing and validation gates
 
-Use the smallest meaningful test set that proves its risks and contracts. Reversible cosmetic edits need visual review, not tests that merely restate the implementation. Booking/money/permission changes require behavioural, integration, and adverse-path coverage.
+For every implemented phase:
+1. Run build/lint/type checks and meaningful behavioural tests appropriate to its change.
+2. Validate new permissions and invariants in the real database; UI checks are insufficient.
+3. Include deterministic fixtures, negative cases, error/empty states and review instructions.
+4. Record actual command, revision, environment, time, result and evidence.
+5. Complete user/client manual acceptance and update handoff/decision records before closing the phase.
 
-Each implemented phase must:
-1. Pass lint/type checks/build and its required unit/integration/browser checks.
-2. Demonstrate server-enforced access and invariant protection for its new capabilities.
-3. Include deterministic fixtures, error/empty states, and instructions another reviewer can follow.
-4. Complete manual validation with actual results and evidence at a known revision.
-5. Update the phase handoff, decision register, and next-phase prerequisites.
+NOT RUN, BLOCKED, FAIL and PASS are distinct. A mock proves logic only, not provider integration. Never record planned screenshots or test names as evidence. Cosmetic edits need proportionate visual review; money, authorization and reservations require adverse-path tests.
 
-Record NOT RUN, BLOCKED, FAIL, or PASS honestly. Missing credentials, a provider outage, and a pending client policy are different blockers. Mock-based tests can validate logic but cannot substitute for gateway/provider integration acceptance.
+Critical cross-phase regression:
+- One upfront payment includes all cart lines before any decision; verified success creates one review submission.
+- Seven-day deadlines originate from successful payment and cannot restart on acceptance or retries.
+- Paid-pending requests reserve nothing; only atomic admin approval allocates capacity.
+- Multiple paid requests for the last unit cannot both become approved; rejected money remains tracked for refund.
+- Owner accounts cannot view raw incoming requests, decide bookings or edit published rates directly.
+- Fixed rate changes require admin authority and discussion audit; existing paid prices never change.
+- Individual rejections/refunds reconcile within mixed-owner carts without duplicate charges or refunds.
+- Cancellation is allowed only in the defined seven-day period with the selected fee; valid later non-delivery remains reviewable.
+- No pause/change features or obsolete payment/completion countdowns exist.
+- Fulfillment/admin review, refund liabilities and ledger balances govern settlement.
+- Worker/provider outages and restoration preserve timing, unresolved obligations and money history.
 
-### Mandatory cross-phase regression cases
+Proposed startup validation targets, not client forecasts or agreed SLAs:
+- Dataset: 1,000 listings and 10,000 accounts across all inventory types.
+- Baseline load: 100 concurrent browsers and a 20-request approval race for the last slot.
+- Ordinary read API p95 under 1 second under documented baseline, excluding third-party completion time.
+- Representative mobile LCP <= 2.5 seconds and CLS <= 0.1 under a recorded test profile.
+- Accessibility target: WCAG 2.2 AA-oriented key journey checks plus keyboard/screen-reader review.
+- Proposed recovery point <= 1 hour and recovery time <= 4 hours, subject to budget/provider review; reconcile payment activity after the recovered point.
 
-- User cannot access or mutate another user's private data by guessing an identifier.
-- Simultaneous approvals cannot oversell whole days or shared slots.
-- Eight-day rules, owner deadlines, cart finalization, and expiry use the approved IST semantics.
-- Early approvals remain held through other decisions, but deadline logic cannot extend holds accidentally.
-- Payment is the sum of accepted items only; one payment produces consistent item-level allocations.
-- Duplicate/forged/late payment events do not duplicate bookings or move money twice.
-- Extensions, pauses, refunds, disputes, and settlements cannot race into conflicting states.
-- Partial refunds use booked units and never exceed refundable money; payout never exceeds eligible balance.
-- Provider and worker downtime do not lose requests or erase financial uncertainty.
-- Restore and reconciliation can explain payments received after a backup was taken.
+P10 must agree or replace targets and report actual measurements. Database restoration must use an isolated Indian environment.
 
-### Proposed measurable targets (client review required)
+## 9. Operating readiness and release
 
-These are engineering test inputs, not claimed startup usage or an agreed SLA:
-- Representative dataset: 1,000 listings and 10,000 accounts, including all inventory types.
-- Baseline load: 100 concurrent browsing sessions and a targeted 20-request race for the last available slot.
-- Proposed API target: p95 below 1 second for ordinary search/booking reads under the agreed baseline, excluding external-provider completion times.
-- Proposed experience target: LCP <= 2.5 seconds and CLS <= 0.1 on representative mobile pages, measured under a documented profile.
-- Accessibility target: WCAG 2.2 AA-oriented testing of key journeys, including keyboard and screen-reader review.
-- Proposed recovery targets for client review: recovery point <= 1 hour and recovery time <= 4 hours, subject to service/budget validation. Any transaction gap must be reconciled with the payment provider.
+Production requires all current business gates resolved, all three categories, real Kerala inventory, provider activation, manual acceptance, backups/alerts and named support/finance operators.
 
-P10 must replace or approve these values with the client, document load conditions, and report measured results. A low-volume dataset is not evidence of scale.
+Runbooks cover setup/deployment/migrations, incident/recovery, admin owner coordination, review deadlines, unreserved competing requests, price publication, rejection/cancellation refunds, late non-delivery, transfer/refund reconciliation and manual payout recording.
 
-## 9. Release and operating readiness
+Budget by compute, worker, database/backups, media storage/egress, email/SMS, maps, monitoring and gateway/transfer costs. Include staging and admin workload. No arbitrary monthly total, staffing promise or launch date is asserted.
 
-Release requires accepted policies, all three categories implemented, phase checks passed, manual sign-off, real inventory/content readiness, India-region evidence, provider activation, and operational ownership.
+Keep sandbox/staging/production isolated. Real charges, refunds, transfers and public release require specific operational authorization at P11. No such action occurs by updating this plan.
 
-Required runbooks cover deployment/migrations, backup/restore, queue recovery, authentication issues, listing suspension, held inventory, payment reconciliation, failed refunds, disputed/failed payouts, manual fallback, and incident escalation.
+## 10. Handoffs and future updates
 
-Estimate recurring cost by component: application/worker compute, database/backups, storage/egress for creatives/evidence, email and SMS volumes, maps, monitoring, and payment/transfer charges. Include staging, message retries, and video download traffic. No fixed monthly total is asserted before D12 and actual provider configuration.
+Use [handoff.md](handoff.md) and the relevant phase file. Each handoff records scope, actual revision/files, schemas/migrations, API/events, configuration names without secrets, real tests/evidence, manual reviewer, defects, recovery and next actions.
 
-Keep development/sandbox, staging, and production isolated. Provider keys and real customer data must not appear in committed fixtures or handoffs. Real charges/refunds/payouts and public release need explicit operational authorization at the release step.
-
-Required client inputs before production: owner onboarding/verification process, payout account eligibility, final policy values, real listings/assets, domain/sender ownership, notification provider setup, geographic scope, tax/receipt scope, review contacts, support ownership, and budget acceptance.
-
-## 10. Handoff and future edits
-
-Use [handoff.md](handoff.md) as the entry point and complete each phase record at its boundary. Handoffs must include implementation revision, schema/API changes, configuration names, actual tests/results/evidence, manual reviewer, known defects, recovery notes, and next actions.
-
-When the user answers a pending question:
-1. Update its Dxx record with exact accepted outcome and date.
-2. Update the corresponding rules and phase criteria here.
-3. Update affected phase handoffs and examples.
-4. If code already exists, assess migration and existing-booking implications before changing behaviour.
-5. Run targeted regression checks for the changed policy.
+When an answer changes:
+1. Update its stable Dxx record and source/date.
+2. Update current workflow, tests and affected handoffs.
+3. Retain superseded policy only in historical sections.
+4. If code/data exists, assess migration and existing-contract effects before changing behaviour.
+5. Validate impacted rules without repeating unrelated checks.
 
 ## 11. Current next step
 
-Review and answer the open questions, prioritizing D01-D08. This draft can be edited incrementally. No application features, tests, provider accounts, or environments are claimed to exist.
+Implement the confirmed manual refund/payout workflow, 192-hour booking notice and 168-hour review/cancellation cutoff. Advertiser cancellation refunds 95% with 5% to Pixlwave inclusive of processing charges. Admin/deadline rejection or owner failure refunds the affected payment less actual applicable Razorpay processing charges, without penalty. Admin manually determines partial-delivery refunds. Complete P00 designs and operational/provider verification using these accepted rules.
 
+The three business questions raised in the review are resolved. Technical setup, provider activation, approved designs, real listings and measured launch gates remain development work. No application code, tests or client acceptance have been completed.
+
+## 12. Revision history
+
+| Version | Date | Change |
+| --- | --- | --- |
+| 0.1 | 2026-09-14 | Initial draft and phase handoffs. |
+| 0.2 | 2026-09-14 | First client answers, including 15% commission and Kerala scope; workflow since superseded in part. |
+| 0.3 | 2026-09-14 | Mappls primary/Google fallback accepted. |
+| 0.4 | 2026-09-14 | Admin-only review, upfront grouped payment, seven days from payment, approval-only reservations, immediate rejection refunds, automatic deadline rejection/refund, 5% advertiser cancellation fee and later owner non-delivery exception; admin-controlled fixed prices; pause/change flows removed. No implementation/data migration. |
+| 0.4 cancellation allocation | 2026-09-14 | Confirmed 95% refund for cancellation within seven days and 5% Pixlwave retention inclusive of Razorpay processing charges; updated partial-cart accounting and phase validation. No application implementation. |
+| 0.5 | 2026-09-15 | Manual admin refunds and owner transfers replace automated money operations; automatic deadline rejection creates a task only. Confirmed completed-service fee allocation and owner-defined service fields; rejection/owner-failure charge payer remains open. No application implementation. |
+| 0.6 | 2026-09-15 | Source coverage audit; clarified one payment order per cart, payment-time notice validation, booking units, manual transaction allocations, receipts and truthful service states. Added phase validation cases and recorded three remaining business questions. No application implementation. |
+| 0.7 | 2026-09-15 | Resolved 192-hour notice, 168-hour cutoff, admin-determined partial refunds and rejection/owner-failure refunds less actual processing charges with no penalty. Updated handoffs and acceptance cases; no implementation. |
