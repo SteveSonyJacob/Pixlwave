@@ -1,9 +1,9 @@
 # P01 handoff - Foundation and accounts
 
-Plan version: 0.9 draft. Updated: 2026-09-15.  
-Status: NOT STARTED  
-Implementation revision: NOT AVAILABLE  
-Application tests: NOT RUN  
+Plan version: 1.0 implementation draft. Updated: 2026-09-16.
+Status: IN PROGRESS - IMPLEMENTATION BUILT; EXTERNAL ACCEPTANCE GATES OPEN
+Implementation revision: uncommitted working tree based on `80741d1`
+Application tests: LOCAL AUTOMATED CHECKS PASS; DATABASE/PROVIDER CASES BLOCKED
 Manual acceptance: NOT REVIEWED
 
 ## Authority and dependencies
@@ -18,36 +18,36 @@ This is the first of seven development phases; there is no separate planning pha
 
 ## Entry checklist
 
-- [ ] Read current policies and repository instructions; do not reopen confirmed answers.
-- [ ] Verify predecessor revision, tests, manual acceptance and required interfaces.
-- [ ] Agree schemas, API/events, permissions and workstream ownership before parallel work.
-- [ ] Record provider/environment/configuration prerequisites without secrets.
-- [ ] Define fixtures, integration environment and affected earlier regression cases.
+- [x] Read current policies and repository instructions; confirmed business answers were not changed.
+- [x] Verify no application predecessor exists; base planning revision is `80741d1`.
+- [x] Record schemas, API/events, permissions and workstream ownership in `docs/architecture/P01-contracts.md`.
+- [x] Record provider/environment/configuration prerequisites without secrets in `.env.example` and the P01 runbook.
+- [x] Define local Auth fixtures, disposable PostgreSQL migration tests and the CI integration environment.
 
 ## Parallel workstreams and deliverables
 
 ### Scope and interface contracts
 
-- [ ] Approve the admin-mediated workflow, permission matrix, charged-cart/item definitions, deadline examples and refund eligibility matrix.
-- [ ] Document price ownership: owner supplies the initial base price; only admin changes a published rate after owner discussion. Preserve booked-price history.
-- [ ] Review all three category forms, upfront checkout, paid-awaiting-admin status, admin coordination notes, advertiser cancellation, refund tracking and owner fulfillment screens.
-- [ ] Specify and validate the confirmed 192-hour notice, 168-hour review/cancellation cutoff, owner non-delivery exception and deadline-to-refund-task contract using dated examples and state/interface definitions. Implementation remains in P04-P06.
-- [ ] Review reference-led responsive designs, provider/data plan, media requirements and estimated startup operating costs.
+- [x] Document the admin-mediated workflow, permission matrix, charged-cart/item definitions, deadline examples and refund eligibility matrix.
+- [x] Document owner initial-price ownership, admin-only published changes and immutable paid prices.
+- [x] Review all three future category forms and checkout/admin/refund/fulfillment screen contracts without implementing later-phase endpoints.
+- [x] Specify and unit-test the 192-hour notice, 168-hour cutoff, non-delivery exception and deadline-to-manual-refund-task contract.
+- [x] Build the reference-led responsive shell and document provider/data, media and illustrative startup cost plans.
 
 ### Platform foundation
 
-- [ ] Scaffold Next.js/TypeScript with reusable UI, clear business modules, configuration validation, supported pinned dependencies and documented local setup.
-- [ ] Establish PostgreSQL/Supabase migrations, worker/outbox, durable jobs, structured redacted logs, health checks, fixtures and CI.
-- [ ] Separate local/test/staging/production configuration and secret handling; select Indian compute/database/storage/backup/log destinations.
-- [ ] Create adapter boundaries for Razorpay, maps, SMTP, SMS and object storage; isolate provider place IDs from first-party listing coordinates.
-- [ ] Specify the shared state model and interface boundaries that keep booking, payment, admin decision, refund, fulfillment and settlement separate. Owning phases P04-P06 implement their records and transitions against these contracts.
+- [x] Scaffold Next.js 16/TypeScript with reusable UI, domain modules, configuration validation, exact lockfile and setup guide.
+- [x] Implement Supabase migrations, durable outbox worker, structured redaction, health endpoint, fixtures and PostgreSQL-backed CI; real local DB execution remains blocked below.
+- [x] Separate environment/secret handling and constrain compute/database/storage/backup/log declarations to Mumbai `ap-south-1`.
+- [x] Define Razorpay, Mappls/Google, email, SMS and object-storage adapters; first-party coordinates are separate from provider place IDs.
+- [x] Define separate payment/review/capacity/fulfillment/refund/settlement contracts for P04-P06.
 
 ### Accounts and access foundation
 
-- [ ] Implement Supabase authentication, phone OTP and selected email method, recovery, session expiry, verified identifier linking and business/profile details.
-- [ ] Allow one individual account to use advertiser and owner modes; separately grant platform administrator privileges.
-- [ ] Explicitly forbid owner accounts from receiving customer request queues or accepting/rejecting bookings. Only admins perform booking decisions and subsequent published-price changes.
-- [ ] Protect admin accounts with appropriate MFA and least-privilege access as an engineering requirement.
+- [x] Implement Supabase verified email/password, recovery, phone OTP/change verification, SSR session refresh and business/profile UI; real delivery validation is blocked below.
+- [x] Allow advertiser/owner mode switching on one profile and provision platform admin through a separate service-role/audit operation.
+- [x] Exclude owner request/decision/rate capabilities in code, UI and RLS contracts.
+- [x] Require a separately granted active admin plus authenticator TOTP AAL2 for admin UI/RLS access.
 
 Parallel sequencing: Scope/design and UI components can progress alongside infrastructure and database setup after the core entities and interfaces are agreed. Auth implementation uses the deployed foundation; identity and permission policies must be agreed before account tests.
 
@@ -59,19 +59,19 @@ The first four validation cases preserve the former scope/design walkthroughs: e
 
 Integration checklist:
 
-- [ ] Use the predecessor's actual records/APIs rather than another demo implementation.
-- [ ] Integrate workstreams into one revision/environment with compatible migrations.
-- [ ] Rerun affected earlier tests and verify every consumer of a changed interface.
-- [ ] Separate fixture/contract evidence from real provider and complete-journey evidence.
-- [ ] Resolve integration defects before phase acceptance.
+- [x] No application predecessor exists; no duplicate demo data model was introduced.
+- [x] Integrate the shell, Auth clients, profiles/RLS, outbox worker, adapters and contracts in one working tree.
+- [x] Run all locally available foundation checks against that working tree.
+- [x] Keep fixture/contract evidence explicitly separate from database/provider/full-journey evidence.
+- [ ] Resolve database/provider/manual acceptance gaps before phase acceptance.
 
 ## Planned testing and validation
 
-- [ ] P01-T01: Walk through paid cart submission, manual admin-owner discussion and mixed item decisions without exposing requests to owner accounts.
-- [ ] P01-T02: Use dated IST examples to validate minimum notice and seven-day boundaries, including a day-seven rejection and a day-seven cancellation awaiting refund processing.
-- [ ] P01-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
-- [ ] P01-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
-- [ ] P01-T05: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
+- [x] P01-T01: Walk through paid cart submission, manual admin-owner discussion and mixed item decisions without exposing requests to owner accounts.
+- [x] P01-T02: Use dated IST examples to validate minimum notice and seven-day boundaries, including a day-seven rejection and a day-seven cancellation awaiting refund processing.
+- [x] P01-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
+- [x] P01-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
+- [x] P01-T05: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
 - [ ] P01-T06: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
 - [ ] P01-T07: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
 - [ ] P01-T08: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
@@ -85,39 +85,39 @@ Exit gate: Foundation and auth work together, scope/interface contracts are docu
 
 ## Actual implementation record
 
-- Delivered behavior and omitted scope: NOT IMPLEMENTED.
-- Files/modules changed: NONE.
-- Branch/commit/build revision and environment URL: NOT AVAILABLE.
-- Accepted decisions, architecture and workstream ownership: NOT RECORDED.
-- Schemas/migrations, compatibility and recovery commands: NOT CREATED.
-- API/event contracts, example payloads and permissions: NOT IMPLEMENTED.
-- Configuration names and secret-store references: NOT CONFIGURED.
-- Provider account/region verification: NOT VERIFIED.
-- Setup/run commands and pinned versions: NOT ESTABLISHED.
-- Predecessor integration and regression evidence: NOT RECORDED.
-- Operations/recovery/reconciliation instructions: NOT ESTABLISHED.
+- Delivered behavior: responsive public/account shell; email/password/phone OTP/recovery actions; advertiser/owner mode switching; verified phone linking; separately provisioned admin; TOTP AAL2 gate; profile RLS; config health; provider boundaries; durable outbox/retry worker; redacted logs; fixtures; CI and contract tests. Later-phase inventory/booking/payment/refund/fulfillment mutation endpoints are intentionally absent.
+- Files/modules changed: application under `src/`, two migrations and local config under `supabase/`, scripts under `scripts/`, CI workflow, pinned package/config files, P01 architecture and operations documents.
+- Branch/commit/build revision and environment URL: uncommitted working tree based on `80741d1`; local production server smoke at `http://localhost:3000`; no deployment URL.
+- Accepted decisions, architecture and workstream ownership: `docs/architecture/P01-contracts.md`; D01-D17/C01-C17 unchanged.
+- Schemas/migrations: `202609150001_foundation_accounts.sql` and `202609150002_outbox_audit.sql`. Compatibility test covers the first-migration prior revision followed by upgrade. Recovery is in `docs/operations/P01-foundation.md`.
+- API/event contracts and permissions: health route, Supabase Auth, `select_account_mode`, `is_admin_aal2`, immutable outbox envelope and permission matrix documented in the P01 contracts.
+- Configuration: `.env.example`; environment separation and secret-store rules in the runbook. No secrets committed.
+- Provider selection: Supabase Mumbai, AWS Mumbai app/worker/data/logs/backups, SES SMTP, Twilio SMS, Mappls primary/Google fallback and Razorpay collection boundary. Account/region/delivery verification remains BLOCKED.
+- Setup/run commands and pinned versions: `README.md`, exact `package-lock.json`, Node >=22.13, Next 16.3.5, Supabase JS 2.116.0 and Supabase CLI 2.117.0.
+- Predecessor integration: no application predecessor. Documentation/base revision `80741d1` retained.
+- Operations/recovery/reconciliation: `docs/operations/P01-foundation.md`; external money retry remains prohibited by adapter design.
 
 Do not paste access tokens, OTPs, personal data or bank credentials into this record.
 
 ## Validation evidence
 
-These checks are planned, not executed.
+Evidence recorded on 2026-09-15/16 IST on Windows, working tree based on `80741d1`, using bundled Node 24.19 to satisfy the declared Node >=22.13 runtime. No real provider credential was used.
 
 | Check | Revision/environment | Command or manual procedure | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
-| P01-T01 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T02 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T03 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T04 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T05 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T06 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T07 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T08 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T09 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T10 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| P01-T11 | Not available | Define exact reproduction | As specified above | Not executed | None | NOT RUN |
-| Earlier-phase regression | Not available | List affected case IDs and rerun steps | Previous behavior remains correct | Not executed | None | NOT RUN |
-| Manual review | Not available | Follow acceptance scenario | Client accepts integrated behavior | Not reviewed | None | NOT REVIEWED |
+| P01-T01 | Working tree / contract | Review P01 contract product/design, permission and cart sections | Exact admin-mediated mixed-item flow; no owner queue | Frozen cart, independent decisions and owner prohibition documented | P01 contracts; `npm run test:docs` | PASS |
+| P01-T02 | Working tree / unit | `npm run test -- src/lib/domain/policy.test.ts` | Exact before/at/after 168/192-hour IST boundaries | Boundary tests pass | 3 policy tests in 12-test suite | PASS |
+| P01-T03 | Working tree / unit+contract | Review refund/price matrix and run policy tests | Owner initial/admin changes, immutable paid price, 85/15 and refund examples | Rules present; Rs 10,000 examples and paise rounding pass | P01 contracts; `policy.test.ts` | PASS |
+| P01-T04 | Working tree / docs | `npm run test:docs` | R01-R18/D01-D17 traced; obsolete route controls absent | Documentation contract check passes | Console output, 2026-09-15/16 IST | PASS |
+| P01-T05 | Working tree / local | Clean `npm ci`; build/start; request `/`, `/auth/sign-in`, `/api/health` without config | Clean install/build/run; invalid config fails clearly | 421 packages, 0 vulnerabilities; home/sign-in 200; health 503 named config errors | Console output | PASS |
+| P01-T06 | Working tree / local | `npm run lint`; `npm run typecheck`; `npm run build`; isolated `npm run db:test` | Static checks and both migration paths pass | Lint/type/build pass; DB stops at `ECONNREFUSED 127.0.0.1:54322` because no PostgreSQL/Docker runtime | Console output; CI PostgreSQL 17 job configured | BLOCKED |
+| P01-T07 | Working tree / unit | `npm run test` outbox cases; real DB restart procedure in runbook | Retry/dedupe and persisted restart behavior | Unit completion/retry passes; real persisted restart not run without DB | `src/worker/outbox.test.ts`; runbook | BLOCKED |
+| P01-T08 | Working tree / build | Build with two server-only canaries; `npm run check:client-secrets`; config unit tests | No server secret in static bundles; India boundaries enforced; provider regions inspected | Two canaries absent and config tests pass; real provider account/region not inspected | Console output; `env.test.ts` | BLOCKED |
+| P01-T09 | Working tree / provider | Follow Auth matrix in P01 runbook with Supabase | Login/OTP/recovery/logout/expiry/linking pass | Code and UI implemented; no Supabase runtime/provider account available | Auth actions/UI/migration; runbook | BLOCKED |
+| P01-T10 | Working tree / provider | Send email and SMS to allowed test accounts | Real delivery evidence distinct from mocks | Not executed; SES/Twilio accounts and allowed recipients unavailable | Provider gate recorded | BLOCKED |
+| P01-T11 | Working tree / integration | Clean DB, seed three roles, sign in/switch/deny admin, restart worker, run CI | Complete same-revision journey | Clean install/static checks pass; DB/Auth/outbox/remote CI portions unavailable | CI workflow and runbook prepared | BLOCKED |
+| Earlier-phase regression | `80741d1` base | Confirm no prior application exists | No application regression suite required | Planning-only predecessor verified | Git base and handoff guide | PASS |
+| Manual review | Working tree | Follow acceptance scenario on phone/desktop with three real roles | Client accepts integrated behavior and designs | Not reviewed | None | NOT REVIEWED |
 
 Record date/time, role, fixture, browser/device, provider mode and report/trace/screenshot path. FAIL, BLOCKED, NOT RUN and PASS are distinct. Never use planned output as evidence.
 
@@ -130,9 +130,9 @@ Record date/time, role, fixture, browser/device, provider mode and report/trace/
 
 | Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| No implementation | Phase functionality not delivered | Future developer | Build and validate all workstreams | NOT STARTED |
-| Configuration/provider checks | See entry gates | Assigned implementer/operator | Record real setup and verification | NOT VERIFIED |
-| Integration evidence | Previous/current behavior not demonstrated | Phase implementer | Execute current tests and affected regression | NOT RUN |
+| No local PostgreSQL/Docker runtime | Migrations and durable restart cannot be executed locally | Environment owner | Start a compatible container runtime or provide a disposable Supabase/database; run `npm run db:test` and restart procedure | BLOCKED |
+| No Supabase/SES/Twilio staging credentials or allowed recipients | P01-T09/T10/T11 real Auth/delivery cannot run | Provider operator | Configure Mumbai staging project/providers, then execute the runbook matrix without sharing secrets | BLOCKED |
+| Manual/client review absent | Phase exit gate cannot close | Client/reviewer | Run the acceptance scenario on phone/desktop and record reviewer/date/defects | NOT REVIEWED |
 
 Add actual defects with severity, reproduction, affected requirements, owner, mitigation and next-phase impact. Retain operational instructions for deadline jobs, notifications, manual refunds/transfers, reconciliation and restore where applicable.
 
@@ -156,3 +156,4 @@ Before handoff:
 | --- | --- | --- |
 | 2026-09-15 | 0.8 | Created this current phase through seven-phase consolidation. Previous tests mapped without loss; one integration case added. No implementation or tests executed. |
 | 2026-09-15 | 0.9 | Changed downstream booking/deadline/non-delivery work to specification and validation; implementation remains in P04-P06. |
+| 2026-09-16 | 1.0 implementation draft | Built P01 application/accounts, RLS/migrations, worker/outbox, adapters, CI, contracts and runbooks. Recorded local passes and kept real database/provider/manual gates open. No business policy changed. |

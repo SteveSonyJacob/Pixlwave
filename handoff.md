@@ -1,7 +1,7 @@
 # Pixlwave development handoff guide
 
-Version: 0.9 draft. Updated: 2026-09-15.
-Status: seven-phase plan only; application implementation NOT STARTED.
+Version: 1.0 implementation draft. Updated: 2026-09-16.
+Status: P01 implementation built; database/provider and manual acceptance gates remain open.
 
 ## Read before continuing
 
@@ -28,7 +28,7 @@ Status: seven-phase plan only; application implementation NOT STARTED.
 
 | Phase | Handoff | Status |
 | --- | --- | --- |
-| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | NOT STARTED |
+| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | IN PROGRESS - implementation built, acceptance open |
 | P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | NOT STARTED |
 | P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | NOT STARTED |
 | P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | NOT STARTED |
@@ -65,9 +65,9 @@ Manual refunds and owner payouts remain manual. Restore/retry handling must reco
 
 ## Current state and next action
 
-Only planning documents, source references and test/handoff specifications exist. Application code, database migrations, deployments and provider configuration have not been implemented; application tests and client acceptance have not run.
+P01 application code, database migrations, RLS, Auth flows, worker/outbox, CI, contracts and runbooks now exist. Local deterministic tests, documentation checks, build, secret scan and HTTP smoke checks pass. PostgreSQL/Supabase replay, real email/SMS/Auth delivery and manual/client acceptance have not run because this environment has no container runtime or provider credentials.
 
-Begin P01's scope/design and foundation/accounts work using current accepted rules. Existing business answers remain accepted; technical/provider choices are completed in their assigned phases. Update the plan, decision register and relevant handoff together when implementation changes an interface or requirement.
+Complete the open P01 gates recorded in its handoff before accepting P02. Existing business answers remain accepted; no business policy was changed by the implementation.
 
 ## Revision note
 
