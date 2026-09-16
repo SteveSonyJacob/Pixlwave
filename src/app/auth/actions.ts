@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { isPhoneAuthEnabled } from "@/lib/auth/features";
 
 function field(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -48,6 +49,7 @@ export async function signUpWithPassword(formData: FormData) {
 }
 
 export async function sendPhoneOtp(formData: FormData) {
+  if (!isPhoneAuthEnabled()) authRedirect("/auth/sign-in", "error", "Phone authentication is not enabled.");
   const supabase = await createServerSupabaseClient();
   const phone = field(formData, "phone");
   if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) authRedirect("/auth/sign-in", "error", "Use an international phone number such as +919876543210.");
@@ -57,6 +59,7 @@ export async function sendPhoneOtp(formData: FormData) {
 }
 
 export async function verifyPhoneOtp(formData: FormData) {
+  if (!isPhoneAuthEnabled()) authRedirect("/auth/sign-in", "error", "Phone authentication is not enabled.");
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.verifyOtp({ phone: field(formData, "phone"), token: field(formData, "token"), type: "sms" });
   if (error) authRedirect(`/auth/verify-phone?phone=${encodeURIComponent(field(formData, "phone"))}`, "error", error.message);

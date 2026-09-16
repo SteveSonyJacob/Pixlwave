@@ -63,7 +63,7 @@ export function readPublicSupabaseEnv(source: EnvSource = process.env) {
   });
   const parsed = schema.safeParse(source);
   if (!parsed.success) {
-    throw new Error("Supabase public configuration is missing or invalid. Check .env.local.");
+    throw new Error("Supabase public configuration is missing or invalid. Check .env.local or .env.");
   }
   return {
     url: parsed.data.NEXT_PUBLIC_SUPABASE_URL,

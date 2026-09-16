@@ -19,14 +19,24 @@ export function MfaPanel() {
     try {
       const supabase = createBrowserSupabaseClient();
       const existing = await supabase.auth.mfa.listFactors();
+      if (existing.error) throw existing.error;
       const verified = existing.data?.totp.find((factor) => factor.status === "verified");
       if (verified) {
         setEnrollment({ id: verified.id, qrCode: "", secret: "Already enrolled" });
         setMessage("Authenticator is already enrolled. Enter a current code to reach assurance level 2.");
       } else {
+        const abandoned = (existing.data?.all ?? []).filter((factor) =>
+          factor.factor_type === "totp" &&
+          factor.status === "unverified" &&
+          factor.friendly_name === "Pixlwave admin"
+        );
+        for (const factor of abandoned) {
+          const { error: cleanupError } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+          if (cleanupError) throw cleanupError;
+        }
         const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "Pixlwave admin" });
         if (error) throw error;
-        setEnrollment({ id: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret });
+        setEnrollment({ id: data.id, qrCode: data.totp.qr_code.trimEnd(), secret: data.totp.secret });
       }
     } catch (error) { setMessage(error instanceof Error ? error.message : "MFA setup failed."); }
     finally { setBusy(false); }

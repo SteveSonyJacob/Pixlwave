@@ -11,7 +11,7 @@ Phase 1 foundation for an admin-managed Kerala advertising marketplace. The repo
 ## First run
 
 1. Run `npm ci`.
-2. Copy `.env.example` to `.env.local` and replace every `change-me` value. Do not commit it. Next.js and the project scripts load this file automatically.
+2. Copy `.env.example` to `.env.local` and replace every `change-me` value. Do not commit it. Next.js and the project scripts load it automatically; standalone scripts also fall back to `.env` for existing setups.
 3. For local Supabase, run `npx supabase start`, then copy the printed URL, publishable key, service key and database URL into `.env.local`.
 4. Apply the schema with `npm run db:migrate` (or `npx supabase db reset` for the full local stack).
 5. Optionally create deterministic local accounts with `npm run seed:auth`.

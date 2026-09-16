@@ -9,7 +9,12 @@ const fixtures = [
 
 async function main() {
   loadLocalEnvFile();
-  if (!['local', 'test'].includes(process.env.APP_ENV ?? '')) throw new Error("Fixture accounts are allowed only in local/test environments.");
+  const appEnv = process.env.APP_ENV ?? "";
+  const allowStaging = process.argv.includes("--allow-staging");
+  const environmentAllowed = ["local", "test"].includes(appEnv) || (appEnv === "staging" && allowStaging);
+  if (!environmentAllowed) {
+    throw new Error("Fixture accounts require local/test, or staging with the explicit --allow-staging flag. Production is never allowed.");
+  }
   const password = process.env.FIXTURE_PASSWORD;
   if (!password || password.length < 12) throw new Error("Set a non-committed FIXTURE_PASSWORD with at least 12 characters.");
   const supabase = createAdminSupabaseClient();

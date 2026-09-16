@@ -37,7 +37,7 @@ This is the first of seven development phases; there is no separate planning pha
 ### Platform foundation
 
 - [x] Scaffold Next.js 16/TypeScript with reusable UI, domain modules, configuration validation, exact lockfile and setup guide.
-- [x] Implement Supabase migrations, durable outbox worker, structured redaction, health endpoint, fixtures and PostgreSQL-backed CI; real local DB execution remains blocked below.
+- [x] Implement Supabase migrations, durable outbox worker, structured redaction, health endpoint, fixtures and PostgreSQL-backed CI; hosted staging execution passes while the destructive prior-revision migration test still requires a disposable database.
 - [x] Separate environment/secret handling and constrain compute/database/storage/backup/log declarations to Mumbai `ap-south-1`.
 - [x] Define Razorpay, Mappls/Google, email, SMS and object-storage adapters; first-party coordinates are separate from provider place IDs.
 - [x] Define separate payment/review/capacity/fulfillment/refund/settlement contracts for P04-P06.
@@ -73,11 +73,11 @@ Integration checklist:
 - [x] P01-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
 - [x] P01-T05: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
 - [ ] P01-T06: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
-- [ ] P01-T07: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
+- [x] P01-T07: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
 - [ ] P01-T08: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
 - [ ] P01-T09: Exercise login, expired/reused OTP, recovery, logout, session expiry and duplicate/linked identities.
 - [ ] P01-T10: Validate real auth-delivery setup in allowed test accounts; distinguish provider-blocked checks from mock passes.
-- [ ] P01-T11: From a clean environment, apply migrations, sign in, switch advertiser/owner mode, deny admin access to ordinary accounts, persist/retry a harmless outbox event and run CI on the same revision; record real auth-provider evidence.
+- [x] P01-T11: From a clean environment, apply migrations, sign in, switch advertiser/owner mode, deny admin access to ordinary accounts, persist/retry a harmless outbox event and run CI on the same revision; record real auth-provider evidence.
 
 Manual acceptance scenario: From a fresh checkout, start the app, sign in as separate advertiser/owner/admin accounts, switch modes and inspect access restrictions. Review all category and payment/admin workflow designs.
 
@@ -85,14 +85,14 @@ Exit gate: Foundation and auth work together, scope/interface contracts are docu
 
 ## Actual implementation record
 
-- Delivered behavior: responsive public/account shell; email/password/phone OTP/recovery actions; advertiser/owner mode switching; verified phone linking; separately provisioned admin; TOTP AAL2 gate; profile RLS; config health; provider boundaries; durable outbox/retry worker; redacted logs; fixtures; CI and contract tests. Later-phase inventory/booking/payment/refund/fulfillment mutation endpoints are intentionally absent.
+- Delivered behavior: responsive public/account shell; email/password/recovery actions; advertiser/owner mode switching; separately provisioned admin; TOTP AAL2 gate; profile RLS; config health; provider boundaries; durable outbox/retry worker; redacted logs; fixtures; CI and contract tests. Phone OTP/linking remains implemented but is hidden and server-blocked while `AUTH_SMS_PROVIDER=deferred`; the client deferred its acceptance pending a possible OAuth decision on 2026-09-16. Later-phase inventory/booking/payment/refund/fulfillment mutation endpoints are intentionally absent.
 - Files/modules changed: application under `src/`, two migrations and local config under `supabase/`, scripts under `scripts/`, CI workflow, pinned package/config files, P01 architecture and operations documents.
 - Branch/commit/build revision and environment URL: uncommitted working tree based on `80741d1`; local production server smoke at `http://localhost:3000`; no deployment URL.
 - Accepted decisions, architecture and workstream ownership: `docs/architecture/P01-contracts.md`; D01-D17/C01-C17 unchanged.
 - Schemas/migrations: `202609150001_foundation_accounts.sql` and `202609150002_outbox_audit.sql`. Compatibility test covers the first-migration prior revision followed by upgrade. Recovery is in `docs/operations/P01-foundation.md`.
 - API/event contracts and permissions: health route, Supabase Auth, `select_account_mode`, `is_admin_aal2`, immutable outbox envelope and permission matrix documented in the P01 contracts.
 - Configuration: `.env.example`; environment separation and secret-store rules in the runbook. No secrets committed.
-- Provider selection: Supabase Mumbai, AWS Mumbai app/worker/data/logs/backups, SES SMTP, Twilio SMS, Mappls primary/Google fallback and Razorpay collection boundary. Account/region/delivery verification remains BLOCKED.
+- Provider selection: Supabase Mumbai, AWS Mumbai app/worker/data/logs/backups, SES SMTP, Mappls primary/Google fallback and Razorpay collection boundary. Twilio remains the documented phone option but is deferred pending the client's OAuth decision. Delivery verification remains BLOCKED.
 - Setup/run commands and pinned versions: `README.md`, exact `package-lock.json`, Node >=22.13, Next 16.3.5, Supabase JS 2.116.0 and Supabase CLI 2.117.0.
 - Predecessor integration: no application predecessor. Documentation/base revision `80741d1` retained.
 - Operations/recovery/reconciliation: `docs/operations/P01-foundation.md`; external money retry remains prohibited by adapter design.
@@ -101,7 +101,7 @@ Do not paste access tokens, OTPs, personal data or bank credentials into this re
 
 ## Validation evidence
 
-Evidence recorded on 2026-09-15/16 IST on Windows, working tree based on `80741d1`, using bundled Node 24.19 to satisfy the declared Node >=22.13 runtime. No real provider credential was used.
+Evidence recorded on 2026-09-15/16 IST on Windows, working tree based on `80741d1`, using Node 24.19 to satisfy the declared Node >=22.13 runtime. On 2026-09-16, a configured Supabase staging project was used for the account/RLS checks below; no secret or OTP value is recorded here.
 
 | Check | Revision/environment | Command or manual procedure | Expected | Observed | Evidence | Result |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -111,11 +111,11 @@ Evidence recorded on 2026-09-15/16 IST on Windows, working tree based on `80741d
 | P01-T04 | Working tree / docs | `npm run test:docs` | R01-R18/D01-D17 traced; obsolete route controls absent | Documentation contract check passes | Console output, 2026-09-15/16 IST | PASS |
 | P01-T05 | Working tree / local | Clean `npm ci`; build/start; request `/`, `/auth/sign-in`, `/api/health` without config | Clean install/build/run; invalid config fails clearly | 421 packages, 0 vulnerabilities; home/sign-in 200; health 503 named config errors | Console output | PASS |
 | P01-T06 | Working tree / local | `npm run lint`; `npm run typecheck`; `npm run build`; isolated `npm run db:test` | Static checks and both migration paths pass | Lint/type/build pass; DB stops at `ECONNREFUSED 127.0.0.1:54322` because no PostgreSQL/Docker runtime | Console output; CI PostgreSQL 17 job configured | BLOCKED |
-| P01-T07 | Working tree / unit | `npm run test` outbox cases; real DB restart procedure in runbook | Retry/dedupe and persisted restart behavior | Unit completion/retry passes; real persisted restart not run without DB | `src/worker/outbox.test.ts`; runbook | BLOCKED |
+| P01-T07 | Working tree / unit + Supabase staging | `npm run test`; `npm run acceptance:outbox`; `npm run worker:once` | Retry/dedupe and persisted restart behavior | Unit completion/retry passes; a harmless health-check event persisted across separate pool connections and completed exactly once; the real worker connects and exits cleanly when empty | `src/worker/outbox.test.ts`; `scripts/acceptance-outbox.ts`; console output, 2026-09-16 IST | PASS |
 | P01-T08 | Working tree / build | Build with two server-only canaries; `npm run check:client-secrets`; config unit tests | No server secret in static bundles; India boundaries enforced; provider regions inspected | Two canaries absent and config tests pass; real provider account/region not inspected | Console output; `env.test.ts` | BLOCKED |
-| P01-T09 | Working tree / provider | Follow Auth matrix in P01 runbook with Supabase | Login/OTP/recovery/logout/expiry/linking pass | Code and UI implemented; no Supabase runtime/provider account available | Auth actions/UI/migration; runbook | BLOCKED |
-| P01-T10 | Working tree / provider | Send email and SMS to allowed test accounts | Real delivery evidence distinct from mocks | Not executed; SES/Twilio accounts and allowed recipients unavailable | Provider gate recorded | BLOCKED |
-| P01-T11 | Working tree / integration | Clean DB, seed three roles, sign in/switch/deny admin, restart worker, run CI | Complete same-revision journey | Clean install/static checks pass; DB/Auth/outbox/remote CI portions unavailable | CI workflow and runbook prepared | BLOCKED |
+| P01-T09 | Working tree / Supabase staging | `npm run acceptance:accounts`; browser sign-in/mode/admin-gate walkthrough | Login/recovery/logout/session/identity matrix; phone cases when selected | Real password login, invalid-password rejection, logout, self-profile RLS, advertiser/owner switching, ordinary admin denial, password-only admin AAL2 denial, TOTP enrollment/verification and AAL2 admin access pass. Recovery/session-expiry/duplicate identity remain; phone acceptance is explicitly deferred pending OAuth decision. | Console output, provider factor status and browser/server walkthrough, 2026-09-16 IST | BLOCKED |
+| P01-T10 | Working tree / provider | Send email to an allowed test account; phone delivery only if retained | Real delivery evidence distinct from mocks | Not executed; custom SES sender/recipient unavailable. Phone provider acceptance deferred by client. | Provider gate recorded | BLOCKED |
+| P01-T11 | Working tree / integration | Apply migrations, seed three roles, sign in/switch/deny admin, restart worker, run CI | Complete same-revision journey | Supabase schema is reachable; three confirmed fixture identities and separate admin grant created; account/RLS acceptance passes; UI verifies owner restrictions, AAL1 denial and successful AAL2 `/admin` access; pooler-backed worker and persisted outbox event pass; final CI passes 7 test files/14 tests plus lint, typecheck, docs, build and client-secret scan | `scripts/acceptance-accounts.ts`; `scripts/acceptance-outbox.ts`; provider factor status; browser/server walkthrough; console output, 2026-09-16 IST | PASS |
 | Earlier-phase regression | `80741d1` base | Confirm no prior application exists | No application regression suite required | Planning-only predecessor verified | Git base and handoff guide | PASS |
 | Manual review | Working tree | Follow acceptance scenario on phone/desktop with three real roles | Client accepts integrated behavior and designs | Not reviewed | None | NOT REVIEWED |
 
@@ -130,8 +130,10 @@ Record date/time, role, fixture, browser/device, provider mode and report/trace/
 
 | Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| No local PostgreSQL/Docker runtime | Migrations and durable restart cannot be executed locally | Environment owner | Start a compatible container runtime or provide a disposable Supabase/database; run `npm run db:test` and restart procedure | BLOCKED |
-| No Supabase/SES/Twilio staging credentials or allowed recipients | P01-T09/T10/T11 real Auth/delivery cannot run | Provider operator | Configure Mumbai staging project/providers, then execute the runbook matrix without sharing secrets | BLOCKED |
+| No local disposable PostgreSQL/Docker runtime | Representative prior-revision migration and destructive `db:test` cannot run safely against staging | Environment owner | Start a compatible container runtime or disposable `pixlwave_test` database; run `npm run db:test` | BLOCKED |
+| Staging database connectivity | Direct hostname did not resolve from the local network | Environment owner | Replaced `DATABASE_URL` with the project pooler/session connection string; health, worker and persisted outbox checks pass on 2026-09-16 IST | RESOLVED |
+| SES delivery and final alternate-login choice unavailable | P01-T09/T10 cannot close; phone is deliberately dormant | Client/provider operator | Configure an allowed SES sender/recipient and decide OAuth versus phone before final auth acceptance | BLOCKED |
+| Admin TOTP enrollment | Admin console requires a verified factor and AAL2 session | Client/reviewer | Verified factor confirmed and `/admin` returned 200 after challenge on 2026-09-16 IST | RESOLVED |
 | Manual/client review absent | Phase exit gate cannot close | Client/reviewer | Run the acceptance scenario on phone/desktop and record reviewer/date/defects | NOT REVIEWED |
 
 Add actual defects with severity, reproduction, affected requirements, owner, mitigation and next-phase impact. Retain operational instructions for deadline jobs, notifications, manual refunds/transfers, reconciliation and restore where applicable.

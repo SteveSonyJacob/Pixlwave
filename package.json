@@ -20,6 +20,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:test": "tsx scripts/test-migrations.ts",
     "seed:auth": "tsx scripts/seed-auth.ts",
+    "acceptance:accounts": "tsx scripts/acceptance-accounts.ts",
+    "acceptance:outbox": "tsx scripts/acceptance-outbox.ts",
     "admin:access": "tsx scripts/admin-access.ts",
     "check:client-secrets": "node scripts/check-client-secrets.mjs",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run test:docs && npm run build && npm run check:client-secrets"
