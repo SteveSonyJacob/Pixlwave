@@ -1,4 +1,6 @@
-type PhoneAuthEnvironment = Pick<NodeJS.ProcessEnv, "AUTH_SMS_PROVIDER">;
+type PhoneAuthEnvironment = {
+  AUTH_SMS_PROVIDER?: string;
+};
 
 export function isPhoneAuthEnabled(source: PhoneAuthEnvironment = process.env) {
   const provider = source.AUTH_SMS_PROVIDER?.trim().toLowerCase();
