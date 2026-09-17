@@ -1,6 +1,4 @@
-type PhoneAuthEnvironment = {
-  AUTH_SMS_PROVIDER?: string;
-};
+type PhoneAuthEnvironment = Readonly<Record<string, string | undefined>>;
 
 export function isPhoneAuthEnabled(source: PhoneAuthEnvironment = process.env) {
   const provider = source.AUTH_SMS_PROVIDER?.trim().toLowerCase();
