@@ -18,13 +18,13 @@ Every main-data region variable must be `ap-south-1`. Run `/api/health` after de
 6. Set a temporary `FIXTURE_PASSWORD` in the current shell and run `npm run seed:auth`. Remove the variable afterwards.
 7. Run `npm run dev` and, in a second process, `npm run worker`.
 
-The local Auth mail sink is Inbucket. A real P01 provider pass must instead use an allowed staging account with custom SES SMTP and Twilio SMS configured.
+The local Auth mail sink is Inbucket. A real P01 provider pass must instead use an allowed staging account with custom SES SMTP and Google OAuth configured.
 
 ## Supabase/Auth configuration gate
 
-Create the hosted project in the explicit South Asia (Mumbai) region. Configure the application URL and exact callback allowlist. Enable email/password with confirmation and secure password change, phone OTP with rate limits/CAPTCHA, refresh-token rotation and a one-hour JWT expiry. Configure SES SMTP with a verified sender/domain. Configure Twilio, complete applicable India TRAI DLT registration and restrict test recipients until abuse controls are reviewed.
+Create the hosted project in the explicit South Asia (Mumbai) region. Configure the application URL and exact callback allowlist. Enable email/password with confirmation and secure password change, Google OAuth, refresh-token rotation and a one-hour JWT expiry. In Google Cloud, configure a Web OAuth client with the Supabase callback `https://<project-ref>.supabase.co/auth/v1/callback`; in Supabase, enable Google and store its client ID/secret there. Configure SES SMTP with a verified sender/domain. Phone OTP remains disabled unless a later client decision selects a TRAI DLT-compliant SMS provider.
 
-Test: email signup/confirmation, password login, invalid login, recovery single use, logout, expired session, SMS OTP success, wrong/expired/reused OTP, phone change verification, duplicate email/phone linking, and delivery to the allowed Gmail/phone accounts. Record timestamps and provider message IDs only; never record the content/token.
+Test: email signup/confirmation, password login, invalid login, recovery single use, logout, expired session, Google first sign-in, existing-email identity linking and duplicate identity handling, and delivery to allowed Gmail accounts. Record timestamps and provider message IDs only; never record the content/token.
 
 ## Administrator access
 
