@@ -1,7 +1,7 @@
 # P02 handoff - Inventory management
 
 Plan version: 0.9 draft. Updated: 2026-09-15.  
-Status: NOT STARTED  
+Status: READY TO START (Predecessor P01 completed and accepted)  
 Implementation revision: NOT AVAILABLE  
 Application tests: NOT RUN  
 Manual acceptance: NOT REVIEWED
@@ -18,8 +18,8 @@ Previous phase: [P01 - Foundation and accounts](P01-foundation-accounts.md).
 
 ## Entry checklist
 
-- [ ] Read current policies and repository instructions; do not reopen confirmed answers.
-- [ ] Verify predecessor revision, tests, manual acceptance and required interfaces.
+- [x] Read current policies and repository instructions; do not reopen confirmed answers.
+- [x] Verify predecessor revision, tests, manual acceptance and required interfaces.
 - [ ] Agree schemas, API/events, permissions and workstream ownership before parallel work.
 - [ ] Record provider/environment/configuration prerequisites without secrets.
 - [ ] Define fixtures, integration environment and affected earlier regression cases.
