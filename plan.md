@@ -1,8 +1,8 @@
 # Pixlwave production development plan
 
-Version: 1.0 implementation draft
-Updated: 2026-09-16
-Status: P01 implementation built; local automated validation partial; database/provider and manual acceptance gates remain open
+Version: 1.0 implementation
+Updated: 2026-09-18
+Status: P01 completed and accepted; P02 ready to begin
 Purpose: phased development, testable acceptance criteria and continuity between development sessions.
 
 ## 1. Authority and current scope
@@ -670,9 +670,9 @@ When an answer changes:
 
 ## 11. Current next step
 
-P01 now has a runnable Next.js account shell, Supabase/PostgreSQL migrations and RLS, Supabase Auth flows, separate admin grants with TOTP MFA, provider boundaries, durable outbox worker, CI, contracts and runbooks. Local lint, type, unit, documentation, build, bundle-secret and HTTP smoke checks pass. See the [P01 handoff](docs/handoffs/P01-foundation-accounts.md) for exact evidence.
+P01 foundation and accounts is completed and accepted: Next.js account shell, Supabase migrations and RLS, Supabase Auth flows, mode switching, admin TOTP MFA, Resend SMTP integration, CI, contracts, and manual walkthrough have passed.
 
-Complete P01 by running the migrations/outbox restart cases on PostgreSQL/Supabase, configuring the Mumbai Supabase project plus SES/Twilio delivery, executing the real Auth matrix, and obtaining manual/client acceptance. These are BLOCKED/NOT REVIEWED rather than claimed as passes. Do not begin P02 acceptance until the P01 exit gate is recorded.
+Proceed with Phase 2 (P02 - Inventory management): build owner onboarding and verification, listings for LED screens, theatre ad slots, and mobile vehicles, initial owner base pricing with admin rate controls, and Mappls Kerala location integration.
 
 ## 12. Revision history
 
@@ -689,3 +689,4 @@ Complete P01 by running the migrations/outbox restart cases on PostgreSQL/Supaba
 | 0.8 | 2026-09-15 | Reorganized into seven development phases with parallel workstreams and explicit integration gates. Preserved all 59 existing validation scenarios, added seven integration cases, mapped IDs and archived old handoffs. No application implementation. |
 | 0.9 | 2026-09-15 | Corrected phase ownership and fixture boundaries: P01 specifies downstream rules, P02/P03 use labeled domain fixtures with P04/P05 reruns, P05 ledger fixtures rerun after P06 fulfillment, and P06 chronological integration starts cancellation before advancing beyond service start. No implementation. |
 | 1.0 implementation draft | 2026-09-16 | Built P01 web/accounts, migrations/RLS, worker/outbox, adapters, CI, contracts and operations. Local automated checks pass where runnable; database/provider and manual acceptance remain open. No business decision changed. |
+| 1.0 final | 2026-09-18 | P01 CI suite, account acceptance, Resend delivery, and manual walkthrough verified and accepted. Phase 1 closed; Phase 2 ready to begin. |

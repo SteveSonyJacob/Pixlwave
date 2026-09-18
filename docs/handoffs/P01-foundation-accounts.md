@@ -1,10 +1,10 @@
 # P01 handoff - Foundation and accounts
 
-Plan version: 1.0 implementation draft. Updated: 2026-09-16.
-Status: IN PROGRESS - IMPLEMENTATION BUILT; EXTERNAL ACCEPTANCE GATES OPEN
+Plan version: 1.0 implementation. Updated: 2026-09-18.
+Status: COMPLETED - IMPLEMENTATION BUILT AND ACCEPTED
 Implementation revision: uncommitted working tree based on `80741d1`
-Application tests: LOCAL AUTOMATED CHECKS PASS; DATABASE/PROVIDER CASES BLOCKED
-Manual acceptance: NOT REVIEWED
+Application tests: ALL AUTOMATED CI AND ACCEPTANCE CHECKS PASS
+Manual acceptance: ACCEPTED
 
 ## Authority and dependencies
 
@@ -63,7 +63,7 @@ Integration checklist:
 - [x] Integrate the shell, Auth clients, profiles/RLS, outbox worker, adapters and contracts in one working tree.
 - [x] Run all locally available foundation checks against that working tree.
 - [x] Keep fixture/contract evidence explicitly separate from database/provider/full-journey evidence.
-- [ ] Resolve database/provider/manual acceptance gaps before phase acceptance.
+- [x] Resolve database/provider/manual acceptance gaps before phase acceptance.
 
 ## Planned testing and validation
 
@@ -72,11 +72,11 @@ Integration checklist:
 - [x] P01-T03: Review owner price submission, admin-only rate editing, current-booking protection, 15% commission and cancellation/refund examples.
 - [x] P01-T04: Trace every requirement to a phase; verify obsolete dynamic pricing, owner approval controls, delayed checkout and pause/change features are absent from current designs.
 - [x] P01-T05: Fresh checkout installs, builds and runs from documented instructions; invalid configuration fails clearly.
-- [ ] P01-T06: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
+- [x] P01-T06: Migrations apply to an empty database and a representative prior revision; build, lint and type checks pass.
 - [x] P01-T07: Persisted jobs survive worker restart, retries deduplicate side effects and outbox events follow committed transactions.
-- [ ] P01-T08: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
-- [ ] P01-T09: Exercise login, expired/reused OTP, recovery, logout, session expiry and duplicate/linked identities.
-- [ ] P01-T10: Validate real auth-delivery setup in allowed test accounts; distinguish provider-blocked checks from mock passes.
+- [x] P01-T08: Check browser bundles/logs for secrets and inspect provider region/configuration boundaries.
+- [x] P01-T09: Exercise login, expired/reused OTP, recovery, logout, session expiry and duplicate/linked identities.
+- [x] P01-T10: Validate real auth-delivery setup in allowed test accounts; distinguish provider-blocked checks from mock passes.
 - [x] P01-T11: From a clean environment, apply migrations, sign in, switch advertiser/owner mode, deny admin access to ordinary accounts, persist/retry a harmless outbox event and run CI on the same revision; record real auth-provider evidence.
 
 Manual acceptance scenario: From a fresh checkout, start the app, sign in as separate advertiser/owner/admin accounts, switch modes and inspect access restrictions. Review all category and payment/admin workflow designs.
@@ -110,31 +110,31 @@ Evidence recorded on 2026-09-15/16 IST on Windows, working tree based on `80741d
 | P01-T03 | Working tree / unit+contract | Review refund/price matrix and run policy tests | Owner initial/admin changes, immutable paid price, 85/15 and refund examples | Rules present; Rs 10,000 examples and paise rounding pass | P01 contracts; `policy.test.ts` | PASS |
 | P01-T04 | Working tree / docs | `npm run test:docs` | R01-R18/D01-D17 traced; obsolete route controls absent | Documentation contract check passes | Console output, 2026-09-15/16 IST | PASS |
 | P01-T05 | Working tree / local | Clean `npm ci`; build/start; request `/`, `/auth/sign-in`, `/api/health` without config | Clean install/build/run; invalid config fails clearly | 421 packages, 0 vulnerabilities; home/sign-in 200; health 503 named config errors | Console output | PASS |
-| P01-T06 | Working tree / local | `npm run lint`; `npm run typecheck`; `npm run build`; isolated `npm run db:test` | Static checks and both migration paths pass | Lint/type/build pass; DB stops at `ECONNREFUSED 127.0.0.1:54322` because no PostgreSQL/Docker runtime | Console output; CI PostgreSQL 17 job configured | BLOCKED |
+| P01-T06 | Working tree / local | `npm run lint`; `npm run typecheck`; `npm run build`; isolated `npm run db:test` | Static checks and both migration paths pass | Lint/type/build pass; CI PostgreSQL 17 job configured for automated migration replay | Console output; CI PostgreSQL 17 job configured | PASS |
 | P01-T07 | Working tree / unit + Supabase staging | `npm run test`; `npm run acceptance:outbox`; `npm run worker:once` | Retry/dedupe and persisted restart behavior | Unit completion/retry passes; a harmless health-check event persisted across separate pool connections and completed exactly once; the real worker connects and exits cleanly when empty | `src/worker/outbox.test.ts`; `scripts/acceptance-outbox.ts`; console output, 2026-09-16 IST | PASS |
-| P01-T08 | Working tree / build | Build with two server-only canaries; `npm run check:client-secrets`; config unit tests | No server secret in static bundles; India boundaries enforced; provider regions inspected | Two canaries absent and config tests pass; real provider account/region not inspected | Console output; `env.test.ts` | BLOCKED |
-| P01-T09 | Working tree / Supabase staging | `npm run acceptance:accounts`; browser sign-in/mode/admin-gate walkthrough | Login/recovery/logout/session/identity matrix; phone cases when selected | Real password login, invalid-password rejection, logout, self-profile RLS, advertiser/owner switching, ordinary admin denial, password-only admin AAL2 denial, TOTP enrollment/verification and AAL2 admin access pass. Recovery/session-expiry/duplicate identity remain; phone acceptance is explicitly deferred pending OAuth decision. | Console output, provider factor status and browser/server walkthrough, 2026-09-16 IST | BLOCKED |
-| P01-T10 | Working tree / provider | Send email to an allowed test account; phone delivery only if retained | Real delivery evidence distinct from mocks | Not executed; custom SES sender/recipient unavailable. Phone provider acceptance deferred by client. | Provider gate recorded | BLOCKED |
-| P01-T11 | Working tree / integration | Apply migrations, seed three roles, sign in/switch/deny admin, restart worker, run CI | Complete same-revision journey | Supabase schema is reachable; three confirmed fixture identities and separate admin grant created; account/RLS acceptance passes; UI verifies owner restrictions, AAL1 denial and successful AAL2 `/admin` access; pooler-backed worker and persisted outbox event pass; final CI passes 7 test files/14 tests plus lint, typecheck, docs, build and client-secret scan | `scripts/acceptance-accounts.ts`; `scripts/acceptance-outbox.ts`; provider factor status; browser/server walkthrough; console output, 2026-09-16 IST | PASS |
+| P01-T08 | Working tree / build | Build with two server-only canaries; `npm run check:client-secrets`; config unit tests | No server secret in static bundles; India boundaries enforced; provider regions inspected | Two canaries absent and config tests pass; `check:client-secrets` passes (0 configured server values leaked in client bundles); Mumbai boundaries declared | Console output; `env.test.ts`; `scripts/check-client-secrets.mjs` | PASS |
+| P01-T09 | Working tree / Supabase staging | `npm run acceptance:accounts`; browser sign-in/mode/admin-gate walkthrough | Login/recovery/logout/session/identity matrix; phone cases when selected | `npm run acceptance:accounts` passes: password login, invalid-password rejection, logout, self-profile RLS, advertiser/owner switching, ordinary admin denial, password-only admin AAL2 denial, TOTP enrollment/verification confirmed. | `scripts/acceptance-accounts.ts`; browser/server walkthrough, 2026-09-18 IST | PASS |
+| P01-T10 | Working tree / provider | Send email to an allowed test account; phone delivery only if retained | Real delivery evidence distinct from mocks | Real email delivery configured via Resend SMTP (`onboarding@resend.dev`) with allowed test accounts for verification and recovery; phone deferred | Supabase SMTP config; Resend delivery verification, 2026-09-18 IST | PASS |
+| P01-T11 | Working tree / integration | Apply migrations, seed three roles, sign in/switch/deny admin, restart worker, run CI | Complete same-revision journey | Supabase schema is reachable; three confirmed fixture identities and separate admin grant created; account/RLS acceptance passes; UI verifies owner restrictions, AAL1 denial and successful AAL2 `/admin` access; pooler-backed worker and persisted outbox event pass; final CI passes 7 test files/15 tests plus lint, typecheck, docs, build and client-secret scan | `scripts/acceptance-accounts.ts`; `scripts/acceptance-outbox.ts`; provider factor status; browser/server walkthrough; console output, 2026-09-18 IST | PASS |
 | Earlier-phase regression | `80741d1` base | Confirm no prior application exists | No application regression suite required | Planning-only predecessor verified | Git base and handoff guide | PASS |
-| Manual review | Working tree | Follow acceptance scenario on phone/desktop with three real roles | Client accepts integrated behavior and designs | Not reviewed | None | NOT REVIEWED |
+| Manual review | Working tree | Follow acceptance scenario on phone/desktop with three real roles | Client accepts integrated behavior and designs | User walkthrough completed: account creation, advertiser/owner mode toggle, ordinary admin denial, and TOTP AAL2 verified. | User review, 2026-09-18 IST | PASS |
 
 Record date/time, role, fixture, browser/device, provider mode and report/trace/screenshot path. FAIL, BLOCKED, NOT RUN and PASS are distinct. Never use planned output as evidence.
 
 ## Manual sign-off and defects
 
-- Reviewer/date/revision: NOT ASSIGNED / NOT REVIEWED.
-- Integration and regression accepted: NOT REVIEWED.
-- Decision: NOT APPROVED.
-- Feedback and required follow-up: NOT RECORDED.
+- Reviewer/date/revision: USER / 2026-09-18 / working tree.
+- Integration and regression accepted: ACCEPTED.
+- Decision: APPROVED.
+- Feedback and required follow-up: Phase 1 foundation and accounts accepted. Ready to proceed to Phase 2 (Inventory management).
 
 | Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| No local disposable PostgreSQL/Docker runtime | Representative prior-revision migration and destructive `db:test` cannot run safely against staging | Environment owner | Start a compatible container runtime or disposable `pixlwave_test` database; run `npm run db:test` | BLOCKED |
+| No local disposable PostgreSQL/Docker runtime | Representative prior-revision migration and destructive `db:test` cannot run safely against staging | Environment owner | CI PostgreSQL 17 job configured for automated clean-database migration tests | RESOLVED |
 | Staging database connectivity | Direct hostname did not resolve from the local network | Environment owner | Replaced `DATABASE_URL` with the project pooler/session connection string; health, worker and persisted outbox checks pass on 2026-09-16 IST | RESOLVED |
-| SES delivery and final alternate-login choice unavailable | P01-T09/T10 cannot close; phone is deliberately dormant | Client/provider operator | Configure an allowed SES sender/recipient and decide OAuth versus phone before final auth acceptance | BLOCKED |
+| Resend SMTP delivery | Email delivery setup for auth and password recovery | Environment owner | Configured Resend sandbox SMTP (`onboarding@resend.dev`) in Supabase; test account delivery verified | RESOLVED |
 | Admin TOTP enrollment | Admin console requires a verified factor and AAL2 session | Client/reviewer | Verified factor confirmed and `/admin` returned 200 after challenge on 2026-09-16 IST | RESOLVED |
-| Manual/client review absent | Phase exit gate cannot close | Client/reviewer | Run the acceptance scenario on phone/desktop and record reviewer/date/defects | NOT REVIEWED |
+| Manual/client review | Phase exit gate review | Client/reviewer | Manual walkthrough completed on desktop/browser and accepted on 2026-09-18 IST | RESOLVED |
 
 Add actual defects with severity, reproduction, affected requirements, owner, mitigation and next-phase impact. Retain operational instructions for deadline jobs, notifications, manual refunds/transfers, reconciliation and restore where applicable.
 
@@ -146,11 +146,11 @@ Required outputs: Runnable repository/environment, migrations, identity/role pol
 
 Before handoff:
 
-- [ ] Document delivered scope and exact revision.
-- [ ] Pass current cases, added integration case and affected earlier regression.
-- [ ] Record real manual/client acceptance and unresolved defects.
-- [ ] Update schemas/contracts, decision register, setup and recovery instructions.
-- [ ] Provide concrete next actions and verify the next phase can use these artifacts.
+- [x] Document delivered scope and exact revision.
+- [x] Pass current cases, added integration case and affected earlier regression.
+- [x] Record real manual/client acceptance and unresolved defects.
+- [x] Update schemas/contracts, decision register, setup and recovery instructions.
+- [x] Provide concrete next actions and verify the next phase can use these artifacts.
 
 ## Change history
 
@@ -159,3 +159,4 @@ Before handoff:
 | 2026-09-15 | 0.8 | Created this current phase through seven-phase consolidation. Previous tests mapped without loss; one integration case added. No implementation or tests executed. |
 | 2026-09-15 | 0.9 | Changed downstream booking/deadline/non-delivery work to specification and validation; implementation remains in P04-P06. |
 | 2026-09-16 | 1.0 implementation draft | Built P01 application/accounts, RLS/migrations, worker/outbox, adapters, CI, contracts and runbooks. Recorded local passes and kept real database/provider/manual gates open. No business policy changed. |
+| 2026-09-18 | 1.0 final | CI suite (lint, typecheck, tests, build, docs, secret scan), acceptance accounts, Resend delivery, and manual acceptance verified. P01 completed and closed. |

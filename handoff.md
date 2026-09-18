@@ -1,7 +1,7 @@
 # Pixlwave development handoff guide
 
-Version: 1.0 implementation draft. Updated: 2026-09-16.
-Status: P01 implementation built; database/provider and manual acceptance gates remain open.
+Version: 1.0 implementation. Updated: 2026-09-18.
+Status: P01 completed and accepted; P02 ready to start.
 
 ## Read before continuing
 
@@ -28,8 +28,8 @@ Status: P01 implementation built; database/provider and manual acceptance gates 
 
 | Phase | Handoff | Status |
 | --- | --- | --- |
-| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | IN PROGRESS - implementation built, acceptance open |
-| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | NOT STARTED |
+| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | COMPLETED - implementation built and accepted |
+| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | READY TO START |
 | P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | NOT STARTED |
 | P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | NOT STARTED |
 | P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | NOT STARTED |
@@ -65,9 +65,9 @@ Manual refunds and owner payouts remain manual. Restore/retry handling must reco
 
 ## Current state and next action
 
-P01 application code, database migrations, RLS, Auth flows, worker/outbox, CI, contracts and runbooks now exist. Local deterministic tests, documentation checks, build, secret scan and HTTP smoke checks pass. PostgreSQL/Supabase replay, real email/SMS/Auth delivery and manual/client acceptance have not run because this environment has no container runtime or provider credentials.
+P01 application code, database migrations, RLS, Auth flows, worker/outbox, CI, contracts, Resend delivery, and manual acceptance are completed and accepted. Local deterministic tests, documentation checks, build, secret scan, and account acceptance pass.
 
-Complete the open P01 gates recorded in its handoff before accepting P02. Existing business answers remain accepted; no business policy was changed by the implementation.
+Phase 1 is complete. Begin Phase 2 (P02 - Inventory management) starting with owner onboarding, inventory forms, and Mappls Kerala map integration.
 
 ## Revision note
 
