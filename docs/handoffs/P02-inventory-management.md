@@ -22,8 +22,8 @@ Previous phase: [P01 - Foundation and accounts](P01-foundation-accounts.md).
 
 ## Entry checklist
 
-- [ ] Read current policies and repository instructions; do not reopen confirmed answers.
-- [ ] Verify predecessor revision, tests, manual acceptance and required interfaces.
+- [x] Read current policies and repository instructions; do not reopen confirmed answers.
+- [x] Verify predecessor revision, tests, manual acceptance and required interfaces.
 - [ ] Agree schemas, API/events, permissions and workstream ownership before parallel work.
 - [ ] Record provider/environment/configuration prerequisites without secrets.
 - [ ] Define fixtures, integration environment and affected earlier regression cases.

@@ -45,12 +45,12 @@ The code contract is `src/lib/domain/access.ts`. Database enforcement is in `sup
 ## Authentication choice
 
 - Primary email method: verified email plus password. Recovery uses a single-use PKCE callback and a new password of at least 12 characters.
-- Alternate sign-in: phone OTP through Supabase Auth. OTP delivery is provider-backed, rate limited and verified by Auth; expired or reused codes must fail.
-- Verified linking: a signed-in user can add and verify a phone with the `phone_change` flow; a phone-only user can add a recovery email and password through the verified email-change flow. Supabase's unique verified identifiers reject duplicates. Real duplicate/linking cases remain a provider acceptance check.
+- Alternate sign-in: Google OAuth through Supabase Auth. The browser starts the PKCE authorization flow and the server callback exchanges the returned code for the application session. Phone OTP stays disabled unless a later client decision selects a TRAI DLT-compliant provider.
+- Verified linking: Supabase handles verified OAuth/email identity linking. A signed-in user may link a phone only if phone authentication is later enabled. Real duplicate/linking cases remain a provider acceptance check.
 - Sessions: SSR cookies with refresh-token rotation, one-hour JWT/session configuration and local-scope logout. Supabase project policy is the authority for session expiry.
 - Admin: separately provisioned database row plus TOTP MFA. A role grant alone is insufficient for the admin console.
 
-Selected delivery providers for setup are Amazon SES SMTP in Mumbai for Auth email and Twilio Verify/SMS for Supabase phone OTP. Supabase currently lists Twilio as a supported provider and warns that India messaging must comply with TRAI DLT rules. Provider accounts, sender/domain registration and real delivery remain environment gates; values in `.env.example` are names, never credentials.
+Selected providers are Amazon SES SMTP in Mumbai for Auth email and Google OAuth for alternate sign-in. Google client credentials are stored in Supabase Auth, never in this application. Provider accounts, sender/domain registration and real delivery remain environment gates; values in `.env.example` are names, never credentials.
 
 ## Charged cart and line contract
 
