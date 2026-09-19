@@ -44,7 +44,7 @@ export default function Home() {
             <article className={`category-card category-${index + 1}`} key={category.name}>
               <div className="category-icon">{category.icon}</div><span className="category-index">0{index + 1}</span>
               <h3>{category.name}</h3><b>{category.unit}</b><p>{category.copy}</p>
-              <span className="coming">Inventory launches in Phase 2</span>
+              <span className="coming">Owner inventory management ready</span>
             </article>
           ))}
         </div>
@@ -66,7 +66,7 @@ export default function Home() {
         <div className="policy-stat"><strong>192h</strong><span>Minimum notice before the first operating or show start</span></div>
         <p>Payment alone is not confirmation. Timely advertiser cancellation returns 95% of the cancelled line; owner inability or non-delivery remains reviewable later.</p>
       </section>
-      <footer className="footer"><span>© 2026 Pixlwave</span><span>English · INR · IST · Kerala launch</span><span>Foundation preview — no live inventory or checkout</span></footer>
+      <footer className="footer"><span>© 2026 Pixlwave</span><span>English · INR · IST · Kerala launch</span><span>Phase 2 preview — public discovery and checkout are not live</span></footer>
     </main>
   );
 }

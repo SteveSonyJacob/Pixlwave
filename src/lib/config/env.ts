@@ -26,7 +26,11 @@ export const serverEnvSchema = z.object({
   LOG_REGION: indiaRegion,
   MAPS_PRIMARY_PROVIDER: z.literal("mappls"),
   MAPS_FALLBACK_PROVIDER: z.literal("google"),
+  MAPPLS_SEARCH_URL: z.url().optional(),
+  MAPPLS_ACCESS_TOKEN: z.string().min(8).refine((value) => value !== "change-me", "must be configured").optional(),
+  GOOGLE_GEOCODING_API_KEY: z.string().min(8).refine((value) => value !== "change-me", "must be configured").optional(),
   OBJECT_STORAGE_PROVIDER: z.enum(["supabase", "s3"]),
+  MEDIA_PRIVATE_BUCKET: z.string().regex(/^[a-z0-9][a-z0-9-]{2,62}$/).default("pixlwave-private-media"),
   PAYMENT_PROVIDER: z.literal("razorpay"),
   DATABASE_ALLOW_TEST_AUTH_STUBS: z.string().optional().default("false").transform((value) => value === "true")
 });
