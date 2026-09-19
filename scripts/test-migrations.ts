@@ -8,6 +8,7 @@ async function resetWithAuthStubs(pool: Pool) {
     do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
     do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
     do $$ begin create role service_role nologin; exception when duplicate_object then null; end $$;
+    grant usage on schema public, auth, extensions to anon, authenticated, service_role;
     create table auth.users (
       id uuid primary key,
       email text,
