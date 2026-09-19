@@ -73,6 +73,40 @@ async function assertInventoryWorkflow(pool: Pool) {
   await asAuthenticated(pool, adminId, "aal2", "select public.change_published_rate($1,1300000,'Discussed with fixture owner','Scheduled published rate update')", [listingId]);
   const revised = await pool.query("select amount_paise from public.published_inventory where id=$1", [listingId]);
   if (Number(revised.rows[0]?.amount_paise) !== 1300000) throw new Error("Admin rate revision did not become current.");
+  return { ownerId, unverifiedId, adminId, listingId };
+}
+
+async function assertSupportAttachmentWorkflow(
+  pool: Pool,
+  users: { ownerId: string; unverifiedId: string; adminId: string; listingId: string },
+) {
+  const ticket = await asAuthenticated(
+    pool,
+    users.ownerId,
+    "aal1",
+    "select (public.create_support_ticket($1::jsonb)).id as id",
+    [JSON.stringify({ listingId: users.listingId, subject: "Fixture attachment request", message: "Please review this fixture attachment." })],
+  );
+  const ticketId = ticket.rows[0]?.id;
+  if (!ticketId) throw new Error("Support ticket fixture was not created.");
+
+  const attachmentId = "40000000-0000-0000-0000-000000000001";
+  await pool.query(`insert into public.private_media_assets(
+      id,uploader_id,purpose,support_ticket_id,object_key,original_name,declared_mime,detected_mime,byte_size,sha256,scan_status,scan_engine,scan_completed_at,retention_until
+    ) values ($1,$2,'support_attachment',$3,'fixture/support.pdf','support.pdf','application/pdf','application/pdf',100,$4,'clean','fixture-scan',now(),now()+interval '10 years')`,
+    [attachmentId, users.ownerId, ticketId, "b".repeat(64)],
+  );
+
+  const requesterRead = await asAuthenticated(pool, users.ownerId, "aal1", "select id from public.private_media_assets where id=$1", [attachmentId]);
+  if (requesterRead.rows.length !== 1) throw new Error("Ticket requester could not read their attachment.");
+  const unrelatedRead = await asAuthenticated(pool, users.unverifiedId, "aal1", "select id from public.private_media_assets where id=$1", [attachmentId]);
+  if (unrelatedRead.rows.length !== 0) throw new Error("Unrelated user unexpectedly read a ticket attachment.");
+  const adminRead = await asAuthenticated(pool, users.adminId, "aal2", "select id from public.private_media_assets where id=$1", [attachmentId]);
+  if (adminRead.rows.length !== 1) throw new Error("AAL2 administrator could not read a ticket attachment.");
+
+  await asAuthenticated(pool, users.adminId, "aal2", "select (public.set_support_ticket_status($1,'closed'::public.support_ticket_status)).status", [ticketId]);
+  const retention = await pool.query("select retention_until > now() + interval '179 days' and retention_until < now() + interval '181 days' as valid from public.private_media_assets where id=$1", [attachmentId]);
+  if (!retention.rows[0]?.valid) throw new Error("Closing a ticket did not set the 180-day attachment retention period.");
 }
 
 async function main() {
@@ -102,8 +136,9 @@ async function main() {
   if (count.rows[0]?.count !== expectedMigrations) throw new Error("Fresh database did not apply every migration.");
   const inventory = await pool.query("select to_regclass('public.inventory_listings') as listings, to_regclass('public.published_inventory') as published");
   if (!inventory.rows[0]?.listings || !inventory.rows[0]?.published) throw new Error("Inventory tables or public projection are missing.");
-  await assertInventoryWorkflow(pool);
-  console.log("Migration tests passed: prior-revision upgrade and empty-database replay.");
+  const inventoryWorkflow = await assertInventoryWorkflow(pool);
+  await assertSupportAttachmentWorkflow(pool, inventoryWorkflow);
+  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, inventory, and support-attachment workflows.");
   } finally { await pool.end(); }
 }
 

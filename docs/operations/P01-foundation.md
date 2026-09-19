@@ -22,7 +22,7 @@ The local Auth mail sink is Inbucket. A real P01 provider pass must instead use 
 
 ## Supabase/Auth configuration gate
 
-Create the hosted project in the explicit South Asia (Mumbai) region. Configure the application URL and exact callback allowlist. Enable email/password with confirmation and secure password change, Google OAuth, refresh-token rotation and a one-hour JWT expiry. In Google Cloud, configure a Web OAuth client with the Supabase callback `https://<project-ref>.supabase.co/auth/v1/callback`; in Supabase, enable Google and store its client ID/secret there. Configure SES SMTP with a verified sender/domain. Phone OTP remains disabled unless a later client decision selects a TRAI DLT-compliant SMS provider.
+Create the hosted project in the explicit South Asia (Mumbai) region. Configure the application URL and exact callback allowlist. Enable email/password with confirmation and secure password change, Google OAuth, refresh-token rotation and a one-hour JWT expiry. In Google Cloud, configure a Web OAuth client with the Supabase callback `https://<project-ref>.supabase.co/auth/v1/callback`; in Supabase, enable Google and store its client ID/secret there. Configure Resend SMTP with a verified sender/domain. Phone OTP remains disabled unless a later client decision selects a TRAI DLT-compliant SMS provider.
 
 Test: email signup/confirmation, password login, invalid login, recovery single use, logout, expired session, Google first sign-in, existing-email identity linking and duplicate identity handling, and delivery to allowed Gmail accounts. Record timestamps and provider message IDs only; never record the content/token.
 

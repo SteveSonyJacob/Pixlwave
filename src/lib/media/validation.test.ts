@@ -24,4 +24,11 @@ describe("private media intake", () => {
     const pdf = new TextEncoder().encode("%PDF-1.7 fake-but-signature-valid");
     expect(() => validateUpload({ bytes: pdf, declaredMime: "application/pdf", purpose: "creative" })).toThrow(/Creative files/);
   });
+
+  it("accepts only document or image support attachments", () => {
+    const pdf = new TextEncoder().encode("%PDF-1.7 fake-but-signature-valid");
+    expect(validateUpload({ bytes: pdf, declaredMime: "application/pdf", purpose: "ticket" }).mimeType).toBe("application/pdf");
+    const video = new Uint8Array(16); video.set([0, 0, 0, 12, 102, 116, 121, 112], 0);
+    expect(() => validateUpload({ bytes: video, declaredMime: "video/mp4", purpose: "ticket" })).toThrow(/Ticket attachments/);
+  });
 });

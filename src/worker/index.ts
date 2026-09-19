@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { log } from "../lib/logging";
 import { loadLocalEnvFile } from "../lib/config/load-local-env";
 import { PostgresOutboxStore, processOne, type OutboxEvent } from "./outbox";
+import { deliverEmail } from "./email-delivery";
 
 loadLocalEnvFile();
 const databaseUrl = process.env.DATABASE_URL;
@@ -16,6 +17,10 @@ const store = new PostgresOutboxStore(pool);
 async function handle(event: OutboxEvent) {
   if (event.topic === "foundation.healthcheck") {
     log("info", "outbox.foundation_healthcheck", { eventId: event.id, dedupeKey: event.dedupe_key });
+    return;
+  }
+  if (event.topic === "communication.email.requested") {
+    await deliverEmail(pool, event);
     return;
   }
   throw new Error(`No delivery adapter registered for topic ${event.topic}`);

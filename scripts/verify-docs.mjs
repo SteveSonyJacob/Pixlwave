@@ -5,6 +5,7 @@ const plan = await fs.readFile("plan.md", "utf8");
 const decisions = await fs.readFile(path.join("docs", "decisions.md"), "utf8");
 const contracts = await fs.readFile(path.join("docs", "architecture", "P01-contracts.md"), "utf8");
 const inventoryContracts = await fs.readFile(path.join("docs", "architecture", "P02-inventory-contracts.md"), "utf8");
+const discoveryContracts = await fs.readFile(path.join("docs", "architecture", "P03-discovery-communication-contracts.md"), "utf8");
 
 for (let number = 1; number <= 18; number += 1) {
   const id = `R${String(number).padStart(2, "0")}`;
@@ -19,10 +20,12 @@ const requiredContracts = ["+168h", "+192h", "Payment received — awaiting admi
 for (const phrase of requiredContracts) if (!contracts.includes(phrase)) throw new Error(`P01 contract is missing: ${phrase}`);
 const requiredInventoryContracts = ["published_inventory", "whole screen per day", "custom mobile route", "five-minute signed download", "no-customer-request boundary"];
 for (const phrase of requiredInventoryContracts) if (!inventoryContracts.includes(phrase)) throw new Error(`P02 contract is missing: ${phrase}`);
+const requiredDiscoveryContracts = ["quote_snapshots", "reserves no inventory", "private internal notes", "does not claim observed playback", "Supabase auth SMTP"];
+for (const phrase of requiredDiscoveryContracts) if (!discoveryContracts.includes(phrase)) throw new Error(`P03 contract is missing: ${phrase}`);
 
 const appEntries = await fs.readdir(path.join("src", "app"), { recursive: true });
 const forbiddenRoutes = ["pause", "resume", "extend", "dynamic-pricing", "owner-approval", "auto-refund", "route-payout"];
 for (const route of forbiddenRoutes) {
   if (appEntries.some((entry) => entry.toLowerCase().split(path.sep).includes(route))) throw new Error(`Obsolete route exists: ${route}`);
 }
-console.log("Documentation contract checks passed: R01-R18, D01-D17, P01/P02 policy examples, and obsolete-route absence.");
+console.log("Documentation contract checks passed: R01-R18, D01-D17, P01/P02/P03 policy examples, and obsolete-route absence.");

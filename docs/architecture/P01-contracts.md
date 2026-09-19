@@ -50,7 +50,7 @@ The code contract is `src/lib/domain/access.ts`. Database enforcement is in `sup
 - Sessions: SSR cookies with refresh-token rotation, one-hour JWT/session configuration and local-scope logout. Supabase project policy is the authority for session expiry.
 - Admin: separately provisioned database row plus TOTP MFA. A role grant alone is insufficient for the admin console.
 
-Selected providers are Amazon SES SMTP in Mumbai for Auth email and Google OAuth for alternate sign-in. Google client credentials are stored in Supabase Auth, never in this application. Provider accounts, sender/domain registration and real delivery remain environment gates; values in `.env.example` are names, never credentials.
+Selected providers are Resend SMTP for Auth email and Google OAuth for alternate sign-in. Google client credentials are stored in Supabase Auth, never in this application. Resend Auth delivery was verified in P01; application API delivery is a separate P03 gate. Values in `.env.example` are names, never credentials.
 
 ## Charged cart and line contract
 
@@ -131,7 +131,7 @@ Future domain transactions insert an event in the same database transaction as t
 | Identity/database | Supabase specific South Asia (Mumbai) region | Primary auth/profile/application data in Mumbai; RLS enabled |
 | Files | Private Supabase Storage in the Mumbai project initially; public listing media separated | First-party creatives/evidence remain private; backup of objects is separate from DB backup |
 | Backups/logs | India-region logical backups/object copies and CloudWatch Mumbai log groups | Restore location must also be India; no secrets or raw OTPs in logs |
-| Email | Amazon SES SMTP endpoint in `ap-south-1` | Normal external recipients allowed; document transit/subprocessors |
+| Email | Resend SMTP for Supabase Auth; Resend API for application notifications | Normal external recipients allowed; document transit/subprocessors and webhook handling |
 | SMS/Auth OTP | Twilio supported Supabase provider | External provider processing is documented; TRAI DLT/sender setup required |
 | Maps | Mappls primary, Google fallback adapter | Store first-party coordinates/locality/route and provider provenance separately from provider place IDs |
 | Payments | Razorpay collection adapter | No refund or payout execution method in the adapter; P05 validates capture |
