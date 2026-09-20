@@ -1,9 +1,9 @@
 # P03 handoff - Discovery and communication
 
-Plan version: 0.9 draft. Updated: 2026-09-15.  
-Status: NOT STARTED  
-Implementation revision: NOT AVAILABLE  
-Application tests: NOT RUN  
+Plan version: 1.0 draft. Updated: 2026-09-21.
+Status: IN PROGRESS — public map slice complete
+Implementation revision: current working tree
+Application tests: 3 map tests PASS; lint and production build PASS
 Manual acceptance: NOT REVIEWED
 
 ## Authority and dependencies
@@ -12,7 +12,7 @@ Read [the plan](../../plan.md), [handoff guide](../../handoff.md), [decision reg
 
 Requirements: R01, R02, R04, R08, R16, R17, R18.  
 Entry dependency: P02 accepted and its actual handoff verified.  
-Decision/configuration gates: P02 published inventory APIs accepted; configure Mappls and SMTP/SMS delivery, ticket/media permissions and supported Kerala discovery.
+Decision/configuration gates: P02 published inventory APIs accepted; configure OpenStreetMap tile/geocoding endpoints and SMTP/SMS delivery, ticket/media permissions and supported Kerala discovery.
 
 Previous phase: [P02 - Inventory management](P02-inventory-management.md).
 
@@ -31,7 +31,7 @@ Previous phase: [P02 - Inventory management](P02-inventory-management.md).
 - [ ] Build Kerala-first homepage/search/map/details, featured inventory, city/locality/category/date/budget filters, responsive navigation and clear availability labels. Details include listing images, dimensions/resolution, pin/address, owner-attributed audience estimates, published unit prices and an availability calendar.
 - [ ] Display fixed current admin-published day/show/slot rates; calculate totals from dated units. No demand or nearby-screen price adjustment service.
 - [ ] Implement immutable pre-payment quote snapshots, rate versions and customer-visible price-change checks. Specify the paid-line price snapshot contract; P04/P05 implement and rerun it with fixture-funded and Razorpay-funded bookings. Admin changes affect future quotes only.
-- [ ] Use Mappls markers/clustering and owner-defined route display through the provider adapter; pricing uses listing rates and booking units, not map traffic/demand.
+- [x] Use MapLibre markers/clustering and owner-defined GeoJSON route display through configurable OpenStreetMap-derived endpoints; pricing uses listing rates and booking units, not map traffic/demand.
 - [ ] Keep geography extensible for later states while enforcing Kerala launch inventory eligibility.
 - [ ] Provide complete source-blueprint listing details and calendar states; keep state selection Kerala-only at launch and display no fake audience or live-availability claims.
 
@@ -80,15 +80,15 @@ Exit gate: Discovery and communication integrate with existing accounts/inventor
 
 ## Actual implementation record
 
-- Delivered behavior and omitted scope: NOT IMPLEMENTED.
-- Files/modules changed: NONE.
-- Branch/commit/build revision and environment URL: NOT AVAILABLE.
-- Accepted decisions, architecture and workstream ownership: NOT RECORDED.
-- Schemas/migrations, compatibility and recovery commands: NOT CREATED.
-- API/event contracts, example payloads and permissions: NOT IMPLEMENTED.
-- Configuration names and secret-store references: NOT CONFIGURED.
-- Provider account/region verification: NOT VERIFIED.
-- Setup/run commands and pinned versions: NOT ESTABLISHED.
+- Delivered behavior and omitted scope: `/map` displays published inventory with district/category filters, clustered markers, rate popups and mobile GeoJSON routes. Other P03 discovery/communication work remains outside this slice.
+- Files/modules changed: public map page/component, published-inventory API consumer, navigation/home links, MapLibre style/worker setup and responsive styles.
+- Branch/commit/build revision and environment URL: current working tree; no deployed URL recorded.
+- Accepted decisions, architecture and workstream ownership: D16/C16 changed to OpenStreetMap + MapLibre GL JS.
+- Schemas/migrations, compatibility and recovery commands: provider migration exists locally and is not applied to a linked environment.
+- API/event contracts, example payloads and permissions: public `GET /api/inventory/published` supplies map records; authenticated geocoding remains separate.
+- Configuration names and secret-store references: configurable public tile URL and server-side Nominatim URL; no client map key.
+- Provider account/region verification: attribution and public-service safeguards implemented; production capacity/manual browser acceptance remain NOT VERIFIED.
+- Setup/run commands and pinned versions: documented in `README.md`; verified with test, lint and production build.
 - Predecessor integration and regression evidence: NOT RECORDED.
 - Operations/recovery/reconciliation instructions: NOT ESTABLISHED.
 

@@ -1,9 +1,9 @@
 # P02 handoff - Inventory management
 
-Plan version: 0.9 draft. Updated: 2026-09-15.  
-Status: NOT STARTED  
-Implementation revision: NOT AVAILABLE  
-Application tests: NOT RUN  
+Plan version: 1.0 draft. Updated: 2026-09-21.
+Status: IN PROGRESS — location/map slice complete
+Implementation revision: current working tree
+Application tests: 3 map tests PASS; lint and production build PASS
 Manual acceptance: NOT REVIEWED
 
 ## Authority and dependencies
@@ -36,7 +36,7 @@ Previous phase: [P01 - Foundation and accounts](P01-foundation-accounts.md).
 - [ ] Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
 - [ ] Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication. Define the immutable paid-booking snapshot fields and validate them with domain fixtures; P04/P05 implement and rerun the actual snapshot flow.
 - [ ] Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
-- [ ] Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
+- [x] Integrate user-triggered Nominatim address search and MapLibre pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
 - [ ] Implement advertiser creative-upload foundations: file type/size checks, scan/quarantine, safe preview, private access and expiring downloads. Specify reusable evidence-storage and retention contracts; P06 implements fulfillment-evidence workflows. Preserve committed-service invariants with domain fixtures until P04/P05 rerun them against bookings.
 - [ ] Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
 
@@ -72,15 +72,15 @@ Exit gate: Verified owners can manage inventory and admins can publish it secure
 
 ## Actual implementation record
 
-- Delivered behavior and omitted scope: NOT IMPLEMENTED.
-- Files/modules changed: NONE.
-- Branch/commit/build revision and environment URL: NOT AVAILABLE.
-- Accepted decisions, architecture and workstream ownership: NOT RECORDED.
-- Schemas/migrations, compatibility and recovery commands: NOT CREATED.
-- API/event contracts, example payloads and permissions: NOT IMPLEMENTED.
-- Configuration names and secret-store references: NOT CONFIGURED.
-- Provider account/region verification: NOT VERIFIED.
-- Setup/run commands and pinned versions: NOT ESTABLISHED.
+- Delivered behavior and omitted scope: OpenStreetMap/Nominatim Kerala search, MapLibre click/drag pin placement and provenance storage are implemented. Other P02 work remains outside this slice.
+- Files/modules changed: map search route, location picker/map, map utilities, inventory domain/configuration, styles and tests.
+- Branch/commit/build revision and environment URL: current working tree; no deployed URL recorded.
+- Accepted decisions, architecture and workstream ownership: D16/C16 changed to OpenStreetMap + MapLibre GL JS.
+- Schemas/migrations, compatibility and recovery commands: `supabase/migrations/202609190001_openstreetmap_provider.sql` converts legacy providers; not applied to a linked environment.
+- API/event contracts, example payloads and permissions: authenticated `GET /api/maps/search?q=...`; existing Supabase map-search rate check retained.
+- Configuration names and secret-store references: `MAPS_PRIMARY_PROVIDER`, `OSM_NOMINATIM_URL`, `NEXT_PUBLIC_OSM_TILE_URL`, optional `MAPS_CONTACT_EMAIL`; no map secret required.
+- Provider account/region verification: public endpoint policies reviewed; production endpoint capacity and Kerala manual acceptance remain NOT VERIFIED.
+- Setup/run commands and pinned versions: documented in `README.md`; MapLibre worker copied by predev/prebuild hooks.
 - Predecessor integration and regression evidence: NOT RECORDED.
 - Operations/recovery/reconciliation instructions: NOT ESTABLISHED.
 

@@ -1,7 +1,7 @@
 # Pixlwave development handoff guide
 
-Version: 0.9 draft. Updated: 2026-09-15.
-Status: seven-phase plan only; application implementation NOT STARTED.
+Version: 1.0 draft. Updated: 2026-09-21.
+Status: implementation in progress; OpenStreetMap/MapLibre mapping slice implemented and tested.
 
 ## Read before continuing
 
@@ -22,7 +22,7 @@ Status: seven-phase plan only; application implementation NOT STARTED.
 - Owner sets initial base price. Only admin changes published prices after owner discussion; paid line prices remain fixed.
 - For completed service, the owner receives 85%; Razorpay charges come from Pixlwave's 15%. Admin transfers funds manually after verification. Rejection/owner-failure refunds deduct only applicable actual Razorpay processing charges, with no penalty.
 - No direct owner approval, dynamic pricing, pause/resume/in-place changes, post-approval payment countdown or fixed 48-hour completion window.
-- LED, theatre and mobile slots, Kerala launch, Supabase, Mappls primary/Google fallback, India-hosted main servers/data, notifications and tickets remain in scope.
+- LED, theatre and mobile slots, Kerala launch, Supabase, OpenStreetMap + MapLibre GL JS, India-hosted main servers/data, notifications and tickets remain in scope.
 
 ## Seven active phases
 
@@ -65,10 +65,10 @@ Manual refunds and owner payouts remain manual. Restore/retry handling must reco
 
 ## Current state and next action
 
-Only planning documents, source references and test/handoff specifications exist. Application code, database migrations, deployments and provider configuration have not been implemented; application tests and client acceptance have not run.
+An application baseline now exists. The OpenStreetMap/MapLibre mapping slice, local provider migration, tests and production build are complete in the current working tree. The migration has not been applied to a linked database, the application has not been deployed, and client/manual map acceptance remains outstanding. Other phase checklists are not implied complete.
 
-Begin P01's scope/design and foundation/accounts work using current accepted rules. Existing business answers remain accepted; technical/provider choices are completed in their assigned phases. Update the plan, decision register and relevant handoff together when implementation changes an interface or requirement.
+Continue the remaining phase work using current accepted rules. Before editing existing listings in a linked environment, review and apply the OpenStreetMap provider migration, configure production-capable tile/geocoding endpoints as needed, and complete representative Kerala browser acceptance.
 
 ## Revision note
 
-v0.9 retains the seven-phase structure and corrects cross-phase ownership and fixture boundaries. P01 specifies downstream rules; P02/P03/P05 label downstream-dependent domain fixtures and require integrated reruns; P06 uses a chronologically valid cancellation-then-service test. The [migration map](docs/phase-mapping.md) and [archived handoffs](docs/archive/v0.7-handoffs/README.md) retain history. No feature, requirement or validation scenario was removed.
+v1.0 retains the seven-phase structure and changes the map provider decision to OpenStreetMap + MapLibre GL JS. P02 location picking and the P03 public map slice are implemented; all unrelated phase gates and validation scenarios remain in force. The [migration map](docs/phase-mapping.md) and [archived handoffs](docs/archive/v0.7-handoffs/README.md) retain history.

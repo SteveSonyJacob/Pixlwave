@@ -1,0 +1,9 @@
+.next/
+node_modules/
+.env
+.env.*
+!.env.example
+coverage/
+tsconfig.tsbuildinfo
+supabase/.temp/
+tmp/

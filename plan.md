@@ -1,8 +1,8 @@
 # Pixlwave production development plan
 
-Version: 0.9 draft  
-Updated: 2026-09-15  
-Status: planning only; no application implementation or application tests started  
+Version: 1.0 draft
+Updated: 2026-09-21
+Status: implementation in progress; OpenStreetMap/MapLibre mapping slice implemented and tested, remaining phase gates unchanged
 Purpose: phased development, testable acceptance criteria and continuity between development sessions.
 
 ## 1. Authority and current scope
@@ -29,7 +29,7 @@ Other confirmed requirements:
 - Admin manually transfers owner funds after fulfillment verification; completion evidence and transfer reference retained. No automated payouts or Route integration.
 - Supabase auth, ticket support and in-app/email/SMS notifications.
 - Main servers/data in India; normal email delivery to Gmail/other addresses allowed.
-- Mappls primary, Google Maps fallback through a provider adapter.
+- OpenStreetMap data and tiles rendered with MapLibre GL JS; configurable tile and geocoding endpoints.
 - Reference-led UI, replaceable logo and clearly marked sample inventory during development.
 - Tests and user/client manual acceptance for every phase.
 
@@ -212,13 +212,13 @@ Engineering accounting rule: use the actual recorded Razorpay processing cost fo
 | Files | Private object storage in Mumbai; public listing images separated | Safe creatives/evidence, expiring access, retention |
 | Payments | Razorpay checkout; manual admin refund and bank-transfer records | Upfront collection, line allocations, refund tracking and verified manual owner settlement; no Route integration |
 | Communication | Selected SMTP/SMS integrated with Auth and application events | Website/email/SMS notifications, tickets |
-| Maps | Mappls primary, Google Maps fallback through adapter | Address/pin search, markers/clusters, planned routes |
+| Maps | OpenStreetMap + MapLibre GL JS through configurable endpoints | Address/pin search, markers/clusters, planned routes |
 | Hosting | AWS Mumbai app/worker and Supabase Mumbai | Isolated staging/production, backups/logs/recovery in India |
 | Validation | Unit, real PostgreSQL integration, Playwright and manual review | Money/permission/capacity invariants and full workflows |
 
 Keep privileged payment, rate, approval and refund mutations server-controlled and protected by database policies. A modular application plus worker is the initial recommendation; no separate pricing microservice is needed.
 
-Mapping uses first-party listing locations and owner-agreed route data; provider content needs the appropriate usage/storage terms. Mappls does not supply booking availability or pricing. Verify Kerala location accuracy, quotas, costs and data handling before production. Main application data stays in India; normal external email delivery is permitted.
+Mapping uses first-party listing locations and owner-agreed route data; provider content needs the appropriate usage/storage terms. OpenStreetMap does not supply booking availability or pricing. Verify Kerala location accuracy, endpoint capacity and data handling before production. Main application data stays in India; normal external email delivery is permitted.
 
 ### Previously checked provider references
 
@@ -228,7 +228,7 @@ Mapping uses first-party listing locations and owner-agreed route data; provider
 - Next.js supports Node.js and Docker deployments: [deployment](https://nextjs.org/docs/app/getting-started/deploying).
 - PostgreSQL can enforce non-overlapping reservations using range constraints; shared capacity additionally needs appropriate slot rows/transactional controls: [range constraints](https://www.postgresql.org/docs/current/rangetypes.html#RANGETYPES-CONSTRAINT).
 - AWS lists Mumbai among Lightsail regions; exact compute/service sizing remains a foundation decision: [AWS availability](https://aws.amazon.com/about-aws/whats-new/2026/06/amazon-lightsail-aws-regions/).
-- Mappls supports interactive web maps, markers, GeoJSON/polylines and India-focused search/geocoding. It is the accepted primary provider; commercial terms, quotas, Kerala accuracy and data handling still require verification: [Web Maps](https://developer.mappls.com/documentation/sdk/Web/Web%20JS/), [search/geocoding](https://about.mappls.com/api/search-and-geocoding/).
+- MapLibre GL JS renders the interactive map, markers, clusters and GeoJSON routes using OpenStreetMap-derived services. The public OSM tile and Nominatim endpoints are suitable only within their published usage policies; production endpoints remain configurable so the application can move to a hosted or self-hosted service as traffic grows: [MapLibre GL JS](https://maplibre.org/maplibre-gl-js/docs/), [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/), [Nominatim policy](https://operations.osmfoundation.org/policies/nominatim/).
 
 Sources checked during planning on 2026-09-13/14. Reverify capabilities and supported versions at implementation; these references are not a locked pricing quote.
 
@@ -342,7 +342,7 @@ Workstream: Listings, pricing, media and capacity
 - Build owner listings and admin publication/rejection/suspension for whole-day LED screens, theatre shows with multiple ad slots and mobile vehicles with rotating slots/routes.
 - Capture initial owner base rate, specs, ad duration, number of plays per show/day, operating hours, blackouts, capacity and owner-attributed audience estimates. Owners set service promises per listing and admin approves them before publication. Define the immutable paid-booking snapshot fields and validate them with domain fixtures; P04/P05 implement and rerun the actual snapshot flow.
 - Make subsequent published-price editing admin-only; record owner discussion, old/new price, effective time and reason. Owner suggestions cannot publish a changed rate.
-- Integrate Mappls address search and pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
+- Integrate user-triggered Nominatim address search and MapLibre pin placement for Kerala listings; retain first-party coordinates/locality and applicable route geometry with provider provenance/terms respected.
 - Implement advertiser creative-upload foundations: file type/size checks, scan/quarantine, safe preview, private access and expiring downloads. Specify reusable evidence-storage and retention contracts; P06 implements fulfillment-evidence workflows. Preserve committed-service invariants with domain fixtures until P04/P05 rerun them against bookings.
 - Validate category-specific image/video constraints and service promises before accepting a creative; show dimensions/resolution and a calendar of real show/day/slot capacity.
 
@@ -372,7 +372,7 @@ Handoff: [P02-inventory-management.md](docs/handoffs/P02-inventory-management.md
 
 Dependencies: P02 accepted; integrate with all relevant completed phases.  
 Requirements: R01, R02, R04, R08, R16, R17, R18.  
-Decision/configuration gates: P02 published inventory APIs accepted; configure Mappls and SMTP/SMS delivery, ticket/media permissions and supported Kerala discovery.
+Decision/configuration gates: P02 published inventory APIs accepted; configure OpenStreetMap tile/geocoding endpoints and SMTP/SMS delivery, ticket/media permissions and supported Kerala discovery.
 
 Parallel work: Public search/map/detail pages and notification/ticket services can progress independently on P01 identities and P02 listings. Booking/payment notification contracts are agreed now and exercised with explicit event fixtures until P04/P05 emits real events.
 
@@ -381,7 +381,7 @@ Workstream: Public discovery and pricing
 - Build Kerala-first homepage/search/map/details, featured inventory, city/locality/category/date/budget filters, responsive navigation and clear availability labels. Details include listing images, dimensions/resolution, pin/address, owner-attributed audience estimates, published unit prices and an availability calendar.
 - Display fixed current admin-published day/show/slot rates; calculate totals from dated units. No demand or nearby-screen price adjustment service.
 - Implement immutable pre-payment quote snapshots, rate versions and customer-visible price-change checks. Specify the paid-line price snapshot contract; P04/P05 implement and rerun it with fixture-funded and Razorpay-funded bookings. Admin changes affect future quotes only.
-- Use Mappls markers/clustering and owner-defined route display through the provider adapter; pricing uses listing rates and booking units, not map traffic/demand.
+- Use MapLibre markers/clustering and owner-defined GeoJSON route display through configurable OpenStreetMap-derived endpoints; pricing uses listing rates and booking units, not map traffic/demand.
 - Keep geography extensible for later states while enforcing Kerala launch inventory eligibility.
 - Provide complete source-blueprint listing details and calendar states; keep state selection Kerala-only at launch and display no fake audience or live-availability claims.
 
@@ -581,7 +581,7 @@ Workstream: System hardening and operational readiness
 Workstream: Client acceptance and production release
 
 - Obtain final approval for admin-only decisions, upfront cart payment, fixed pricing, seven-day cancellation/refund policy, owner non-delivery exception and all category workflows.
-- Configure Indian production servers/data, providers, domain/TLS, safe uploads, backups, alerts and Mappls production access.
+- Configure Indian production servers/data, providers, domain/TLS, safe uploads, backups, alerts and production-capable OpenStreetMap-derived tile/geocoding access.
 - Publish real verified Kerala listings and admin-approved rates; remove demo content and train admins for the seven-day coordination workload.
 - Complete operational ownership, support, cancellation/refund disclosures, receipt/tax scope and owner onboarding/settlement arrangements.
 - Perform expressly authorized controlled live payment/refund/settlement checks where needed, then deliver release/recovery/training handoffs.
@@ -681,6 +681,7 @@ The three business questions raised in the review are resolved. Technical setup,
 | 0.1 | 2026-09-14 | Initial draft and phase handoffs. |
 | 0.2 | 2026-09-14 | First client answers, including 15% commission and Kerala scope; workflow since superseded in part. |
 | 0.3 | 2026-09-14 | Mappls primary/Google fallback accepted. |
+| 1.0 | 2026-09-21 | Mapping changed to OpenStreetMap + MapLibre GL JS with configurable tile/geocoding endpoints. |
 | 0.4 | 2026-09-14 | Admin-only review, upfront grouped payment, seven days from payment, approval-only reservations, immediate rejection refunds, automatic deadline rejection/refund, 5% advertiser cancellation fee and later owner non-delivery exception; admin-controlled fixed prices; pause/change flows removed. No implementation/data migration. |
 | 0.4 cancellation allocation | 2026-09-14 | Confirmed 95% refund for cancellation within seven days and 5% Pixlwave retention inclusive of Razorpay processing charges; updated partial-cart accounting and phase validation. No application implementation. |
 | 0.5 | 2026-09-15 | Manual admin refunds and owner transfers replace automated money operations; automatic deadline rejection creates a task only. Confirmed completed-service fee allocation and owner-defined service fields; rejection/owner-failure charge payer remains open. No application implementation. |

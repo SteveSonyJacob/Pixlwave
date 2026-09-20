@@ -1,6 +1,6 @@
 # Pixlwave decision register
 
-Version: 0.9 draft. Updated: 2026-09-15.
+Version: 1.0 draft. Updated: 2026-09-21.
 Source: latest client workflow clarification and subsequent user answers, including exact 192/168-hour timing, admin-determined partial refunds and the final processing-charge-only rule for rejection/owner failure.
 
 ## Current authority
@@ -30,7 +30,7 @@ Phase references below use the seven-phase v0.9 roadmap. See [phase/test migrati
 | D13 | MANUAL MONEY OPERATIONS CONFIRMED / VERIFY | Razorpay checkout collects advertiser payments. Admin performs refunds manually and records completion. Owner payout is a manual bank transfer after verification. Razorpay Route and automated refund/payout execution are excluded. | Verify account checkout and manual refund capabilities, transaction references and grouped-payment item reconciliation. Separate payment webhooks from admin completion status; a webhook alone must not mark an admin refund task refunded. Check references and actual amounts; never retry uncertain money movements automatically. | P05-P07 |
 | D14 | SERVICE FIELDS CONFIRMED / MEDIA DETAILS OPEN | Owners specify ad duration, plays per show/day and operating hours per listing, subject to admin approval. | Validate category-specific capacity/service promises, snapshot approved terms on paid bookings and prohibit edits that silently change commitments. Technical upload limits, verification documents and evidence retention remain to be specified and tested. Owners fulfill service outside the website. | P02, P04, P06-P07 |
 | D15 | DEFERRED / RELEASE CHECK | GST feature deferred, with an extension point. | Distinguish booking receipts from GST invoices and record client-approved launch invoicing scope. Razorpay fees/tax are a separate provider expense. | P05, P07 |
-| D16 | RESOLVED POLICY / VERIFY | Mappls primary, Google Maps fallback, provider adapter. First-party listing coordinates/locality/routes stored in India's database. | Obtain commercial terms/quotas; verify Kerala accuracy, key restrictions, provenance/licensing of provider-derived data and provider failure behaviour before fallback. | P01-P03, P07 |
+| D16 | RESOLVED POLICY / VERIFY | OpenStreetMap data and tiles rendered with MapLibre GL JS behind configurable tile/geocoding endpoints. First-party listing coordinates/locality/routes stored in India's database. | Respect OSM attribution and public endpoint policies; verify Kerala accuracy and use production-capable hosted/self-hosted endpoints when traffic exceeds public-service limits. | P01-P03, P07 |
 | D17 | RESOLVED POLICY / VERIFY | User explicitly selected reservation only after admin approval. Paid-pending requests do not reserve screens or slots. | Show paid-awaiting-confirmation clearly. Check capacity atomically when admin accepts; multiple paid requests can compete for one slot. Declined requests retain refund liabilities. Cancellation/rejection releases only a reservation that actually exists. | P04-P06 |
 
 Manual execution supersedes earlier immediate/automatic refund initiation and Route-based payout proposals. Automatic deadline rejection remains; it only creates an admin task. The latest charge answer applies to rejection/owner failure and does not override the explicit completed-booking fee allocation.
@@ -58,7 +58,7 @@ All three questions from the v0.6 review are answered. The user's final clarific
 | C13 | Owner initial base price; admin changes published rates after discussion. No dynamic pricing. Paid prices remain fixed. Service starts at least 192 hours after payment; review/cancellation closes at 168 hours. Owner-defined ad duration, plays per show/day and operating hours require admin approval. |
 | C14 | Main servers/data in India; GST feature deferred; every phase needs tests and manual acceptance. |
 | C15 | Kerala-first launch, future geographic expansion supported. |
-| C16 | Mappls primary/Google Maps fallback behind a replaceable adapter. |
+| C16 | OpenStreetMap + MapLibre GL JS behind configurable tile/geocoding endpoints. |
 | C17 | Both seven-day periods start at successful payment. Reservation occurs only when admin approves, not when the advertiser pays. |
 
 ## Superseded policy history
@@ -84,10 +84,11 @@ This section is historical only and must not drive implementation.
 | 2026-09-14 | 0.1 | User authorized a draft with pending questions and phase handoffs. |
 | 2026-09-14 | 0.2 | Client's eight answers established 15%, Kerala launch and other rules; several workflow rules were later superseded. |
 | 2026-09-14 | 0.3 | User approved Mappls primary/Google fallback. |
+| 2026-09-21 | 1.0 | User replaced Mappls/Google with OpenStreetMap + MapLibre GL JS. |
 | 2026-09-14 | 0.4 | Latest client clarification replaced booking approval, payment timing, refunds/cancellation and price management. |
 | 2026-09-14 | 0.4 follow-up | User confirmed seven days from payment, 5% cancellation fee, approval-only reservation, automatic deadline rejection/refund and immediate rejection-refund initiation. |
 
-Update this register, plan and affected phase handoffs together. Retain superseded rules only in history. No application or live financial records exist, so this revision requires no data migration and claims no executed application tests.
+Update this register, plan and affected phase handoffs together. Retain superseded rules only in history. The mapping implementation includes a local database migration for legacy provider values; it has not been applied to a linked environment and no live financial action is implied.
 | 2026-09-14 | 0.4 cancellation allocation | User confirmed cancellation within seven days refunds the paid amount less 5%, retained by Pixlwave inclusive of Razorpay processing charges. Recorded 95% refund and no additional processing deduction; cancellation initiation timing remains separate. |
 | 2026-09-15 | 0.5 | User confirmed after-eight-day dates and maximum seven-day approval, manual refunds with admin completion status, manual owner transfers after verification, completed-booking charges from Pixlwave's 15%, and admin-approved owner service fields. Pixlwave does not cover rejection/owner-failure charges; payer remains open. |
 | 2026-09-15 | 0.6 | Documentation audit clarified payment/notice/receipt/manual-journal contracts and mapped the original blueprint. Three business questions remain D01/D06/D07; engineering assumptions are labeled in plan section 3.6. |
