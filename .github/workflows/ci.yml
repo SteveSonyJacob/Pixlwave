@@ -1,0 +1,52 @@
+name: Phase 1 CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pixlwave_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pixlwave_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pixlwave_test
+      APP_ENV: test
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://phase-one-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder_for_build_only
+      SUPABASE_SERVICE_ROLE_KEY: service_role_placeholder_for_build_only
+      LOG_LEVEL: info
+      AUTH_EMAIL_METHOD: password
+      AUTH_SMTP_PROVIDER: test-provider
+      AUTH_SMS_PROVIDER: test-provider
+      AUTH_SESSION_IDLE_MINUTES: 60
+      AUTH_ADMIN_MFA_REQUIRED: true
+      APP_COMPUTE_REGION: ap-south-1
+      DATABASE_REGION: ap-south-1
+      OBJECT_STORAGE_REGION: ap-south-1
+      BACKUP_REGION: ap-south-1
+      LOG_REGION: ap-south-1
+      MAPS_PRIMARY_PROVIDER: mappls
+      MAPS_FALLBACK_PROVIDER: google
+      OBJECT_STORAGE_PROVIDER: supabase
+      PAYMENT_PROVIDER: razorpay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:test
+      - run: npm run ci
