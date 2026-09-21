@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ListingForm } from "@/components/listing-form";
 import { MessageBanner } from "@/components/message-banner";
-import { MediaUpload } from "@/components/media-upload";
 import { requireIdentity } from "@/lib/auth/identity";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -12,11 +11,10 @@ type Details = Record<string, string | number | boolean | string[] | undefined>;
 export default async function EditListingPage({ params, searchParams }: PageProps) {
   const [{ id }, query, identity] = await Promise.all([params, searchParams, requireIdentity()]);
   const supabase = await createServerSupabaseClient();
-  const [{ data: listing }, { data: blackouts }, { data: shows }, { data: listingMedia }] = await Promise.all([
+  const [{ data: listing }, { data: blackouts }, { data: shows }] = await Promise.all([
     supabase.from("inventory_listings").select("*").eq("id", id).eq("owner_id", identity.userId).maybeSingle(),
     supabase.from("listing_blackouts").select("starts_on,ends_on,reason").eq("listing_id", id).order("starts_on"),
-    supabase.from("theatre_show_instances").select("starts_at").eq("listing_id", id).order("starts_at"),
-    supabase.from("private_media_assets").select("id,original_name,scan_status").eq("listing_id", id).eq("purpose", "listing_media").order("created_at")
+    supabase.from("theatre_show_instances").select("starts_at").eq("listing_id", id).order("starts_at")
   ]);
   if (!listing) notFound();
   if (listing.status !== "draft" && listing.status !== "rejected") redirect("/owner?error=Only+draft+or+rejected+listings+can+be+edited");
@@ -33,5 +31,5 @@ export default async function EditListingPage({ params, searchParams }: PageProp
     showStarts: (shows ?? []).map((show) => show.starts_at),
     blackouts: (blackouts ?? []).map((blackout) => `${blackout.starts_on}|${blackout.ends_on}|${blackout.reason}`).join("\n")
   };
-  return <main className="dashboard-shell listing-builder"><div className="dashboard-heading"><div><span className="eyebrow">Edit draft</span><h1>{listing.title}</h1><p>Changes require a fresh admin review. Published listings and rates cannot be edited by owners.</p></div><Link className="button button-secondary button-small" href="/owner">Back to inventory</Link></div><MessageBanner error={query.error} /><section className="panel-card listing-media-card"><span className="eyebrow">Public gallery</span><h2>Listing photography</h2><p>Upload clean PNG or JPEG photographs before submission. They become public only if an administrator publishes this listing.</p><MediaUpload purpose="listing" listingId={id} inputName="listingMediaAssetId" accept="image/png,image/jpeg" label="PNG or JPEG, up to 50 MB" />{listingMedia?.length ? <div className="document-links">{listingMedia.map((asset) => <span key={asset.id}>{asset.original_name} · {asset.scan_status}</span>)}</div> : null}</section><ListingForm initial={initial} /></main>;
+  return <main className="dashboard-shell listing-builder"><div className="dashboard-heading"><div><span className="eyebrow">Edit draft</span><h1>{listing.title}</h1><p>Changes require a fresh admin review. Published listings and rates cannot be edited by owners.</p></div><Link className="button button-secondary button-small" href="/owner">Back to inventory</Link></div><MessageBanner error={query.error} /><ListingForm initial={initial} /></main>;
 }

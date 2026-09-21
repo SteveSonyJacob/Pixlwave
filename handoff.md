@@ -1,7 +1,7 @@
 # Pixlwave development handoff guide
 
-Version: 1.0 implementation. Updated: 2026-09-18.
-Status: P01 completed and accepted; P02 ready to start.
+Version: 1.0 draft. Updated: 2026-09-21.
+Status: implementation in progress; OpenStreetMap/MapLibre mapping slice implemented and tested.
 
 ## Read before continuing
 
@@ -22,14 +22,14 @@ Status: P01 completed and accepted; P02 ready to start.
 - Owner sets initial base price. Only admin changes published prices after owner discussion; paid line prices remain fixed.
 - For completed service, the owner receives 85%; Razorpay charges come from Pixlwave's 15%. Admin transfers funds manually after verification. Rejection/owner-failure refunds deduct only applicable actual Razorpay processing charges, with no penalty.
 - No direct owner approval, dynamic pricing, pause/resume/in-place changes, post-approval payment countdown or fixed 48-hour completion window.
-- LED, theatre and mobile slots, Kerala launch, Supabase, Mappls primary/Google fallback, India-hosted main servers/data, notifications and tickets remain in scope.
+- LED, theatre and mobile slots, Kerala launch, Supabase, OpenStreetMap + MapLibre GL JS, India-hosted main servers/data, notifications and tickets remain in scope.
 
 ## Seven active phases
 
 | Phase | Handoff | Status |
 | --- | --- | --- |
-| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | COMPLETED - implementation built and accepted |
-| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | READY TO START |
+| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | NOT STARTED |
+| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | NOT STARTED |
 | P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | NOT STARTED |
 | P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | NOT STARTED |
 | P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | NOT STARTED |
@@ -65,10 +65,10 @@ Manual refunds and owner payouts remain manual. Restore/retry handling must reco
 
 ## Current state and next action
 
-P01 application code, database migrations, RLS, Auth flows, worker/outbox, CI, contracts, Resend delivery, and manual acceptance are completed and accepted. Local deterministic tests, documentation checks, build, secret scan, and account acceptance pass.
+An application baseline now exists. The OpenStreetMap/MapLibre mapping slice, local provider migration, tests and production build are complete in the current working tree. The migration has not been applied to a linked database, the application has not been deployed, and client/manual map acceptance remains outstanding. Other phase checklists are not implied complete.
 
-Phase 1 is complete. Begin Phase 2 (P02 - Inventory management) starting with owner onboarding, inventory forms, and Mappls Kerala map integration.
+Continue the remaining phase work using current accepted rules. Before editing existing listings in a linked environment, review and apply the OpenStreetMap provider migration, configure production-capable tile/geocoding endpoints as needed, and complete representative Kerala browser acceptance.
 
 ## Revision note
 
-v0.9 retains the seven-phase structure and corrects cross-phase ownership and fixture boundaries. P01 specifies downstream rules; P02/P03/P05 label downstream-dependent domain fixtures and require integrated reruns; P06 uses a chronologically valid cancellation-then-service test. The [migration map](docs/phase-mapping.md) and [archived handoffs](docs/archive/v0.7-handoffs/README.md) retain history. No feature, requirement or validation scenario was removed.
+v1.0 retains the seven-phase structure and changes the map provider decision to OpenStreetMap + MapLibre GL JS. P02 location picking and the P03 public map slice are implemented; all unrelated phase gates and validation scenarios remain in force. The [migration map](docs/phase-mapping.md) and [archived handoffs](docs/archive/v0.7-handoffs/README.md) retain history.

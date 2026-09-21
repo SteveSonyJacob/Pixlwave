@@ -14,7 +14,7 @@ const led = {
   title: "MG Road LED screen",
   description: "A whole-screen daily placement with audited service promises.",
   locality: "Kochi", district: "Ernakulam" as const, latitude: 9.9816, longitude: 76.2999,
-  sourceProvider: "mappls" as const, sourcePlaceId: "mmi-123", audienceEstimate: 20_000,
+  sourceProvider: "openstreetmap" as const, sourcePlaceId: "osm-123", audienceEstimate: 20_000,
   audienceBasis: "Owner estimate based on a June 2026 manual footfall count.",
   adDurationSeconds: 10, playsPerUnit: 120, operatingStart: "09:00", operatingEnd: "21:00",
   baseRatePaise: 1_200_000, servicePromise: "One exclusive advertiser receives the whole screen for the published day.",

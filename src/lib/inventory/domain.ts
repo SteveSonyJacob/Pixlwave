@@ -16,7 +16,7 @@ const commonListing = z.object({
   district: z.enum(keralaDistricts),
   latitude: z.coerce.number().min(8.17).max(12.8),
   longitude: z.coerce.number().min(74.8).max(77.6),
-  sourceProvider: z.enum(["mappls", "google", "manual"]),
+  sourceProvider: z.enum(["openstreetmap", "manual"]),
   sourcePlaceId: z.string().trim().min(2).max(200),
   audienceEstimate: z.coerce.number().int().positive().max(100_000_000),
   audienceBasis: z.string().trim().min(10).max(500),

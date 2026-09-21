@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { MessageBanner } from "@/components/message-banner";
 import { requireAdminMfa } from "@/lib/auth/identity";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -21,7 +20,7 @@ export default async function AdminPage({ searchParams }: PageProps) {
   const listingQueue = (submitted ?? []) as Listing[];
   const live = (published ?? []) as Listing[];
   return <main className="dashboard-shell wide-dashboard">
-    <div className="dashboard-heading"><div><span className="eyebrow">AAL2 protected</span><h1>Inventory control room</h1><p>{identity.fullName}, verify owners, approve service promises and control every published rate.</p></div><div className="heading-actions"><Link className="button button-secondary button-small" href="/admin/support">Support queue</Link><span className="status status-ok">Admin MFA verified</span></div></div>
+    <div className="dashboard-heading"><div><span className="eyebrow">AAL2 protected</span><h1>Inventory control room</h1><p>{identity.fullName}, verify owners, approve service promises and control every published rate.</p></div><span className="status status-ok">Admin MFA verified</span></div>
     <MessageBanner message={query.message} error={query.error} />
     <div className="metric-grid"><div><span>Owner reviews</span><strong>{ownerQueue.length}</strong><small>Submitted identities</small></div><div><span>Listing reviews</span><strong>{listingQueue.length}</strong><small>Unpublished inventory</small></div><div><span>Published</span><strong>{live.length}</strong><small>Public read API records</small></div></div>
     <section className="admin-section"><div className="section-heading compact-heading"><div><span className="eyebrow">Queue 01</span><h2>Owner verification</h2></div><p>Documents are private. Download links expire after five minutes.</p></div>

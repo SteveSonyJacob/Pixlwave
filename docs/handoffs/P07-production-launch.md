@@ -38,7 +38,7 @@ Previous phase: [P06 - Fulfillment and settlement](P06-fulfillment-settlement.md
 ### Client acceptance and production release
 
 - [ ] Obtain final approval for admin-only decisions, upfront cart payment, fixed pricing, seven-day cancellation/refund policy, owner non-delivery exception and all category workflows.
-- [ ] Configure Indian production servers/data, providers, domain/TLS, safe uploads, backups, alerts and Mappls production access.
+- [ ] Configure Indian production servers/data, providers, domain/TLS, safe uploads, backups, alerts and production-capable OpenStreetMap-derived tile/geocoding access.
 - [ ] Publish real verified Kerala listings and admin-approved rates; remove demo content and train admins for the seven-day coordination workload.
 - [ ] Complete operational ownership, support, cancellation/refund disclosures, receipt/tax scope and owner onboarding/settlement arrangements.
 - [ ] Perform expressly authorized controlled live payment/refund/settlement checks where needed, then deliver release/recovery/training handoffs.
