@@ -13,6 +13,10 @@ export const serverEnvSchema = z.object({
   AUTH_EMAIL_METHOD: z.literal("password"),
   AUTH_SMTP_PROVIDER: z.string().min(2).refine((value) => value !== "change-me", "must be configured"),
   AUTH_SMS_PROVIDER: z.string().min(2).refine((value) => value !== "change-me", "must be configured"),
+  AUTH_OAUTH_PROVIDERS: z.string().optional().default("").refine(
+    (value) => value.split(",").every((provider) => ["", "google"].includes(provider.trim().toLowerCase())),
+    "only the supported Google provider may be enabled"
+  ),
   AUTH_SESSION_IDLE_MINUTES: z.coerce.number().int().min(15).max(1440),
   AUTH_ADMIN_MFA_REQUIRED: z.string().transform((value) => value === "true").pipe(z.literal(true)),
   APP_COMPUTE_REGION: indiaRegion,

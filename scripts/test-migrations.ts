@@ -52,7 +52,7 @@ async function assertInventoryWorkflow(pool: Pool) {
   await asAuthenticated(pool, adminId, "aal2", "select (public.review_owner_verification($1,'approved',null)).status", [ownerId]);
   const listingPayload = {
     category: "led", title: "Fixture LED Screen", description: "A valid whole-day LED service used by the migration acceptance test.",
-    locality: "Kochi", district: "Ernakulam", latitude: 9.9816, longitude: 76.2999, sourceProvider: "manual", sourcePlaceId: "fixture-pin",
+    locality: "Kochi", district: "Ernakulam", latitude: 9.9816, longitude: 76.2999, sourceProvider: "openstreetmap", sourcePlaceId: "fixture-osm-place",
     audienceEstimate: 1000, audienceBasis: "Fixture owner estimate for a repeatable integration test.", adDurationSeconds: 10, playsPerUnit: 120,
     operatingStart: "09:00", operatingEnd: "21:00", baseRatePaise: 1200000, servicePromise: "Exclusive whole-screen placement for each approved advertised day.",
     categoryDetails: { screenWidthPx: 1920, screenHeightPx: 1080, physicalWidthMetres: 6, physicalHeightMetres: 3.4, dailyCapacity: 1 }, blackouts: []

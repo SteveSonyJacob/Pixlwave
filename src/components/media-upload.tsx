@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-export function MediaUpload({ purpose, inputName, accept, label }: { purpose: "creative" | "verification"; inputName: string; accept: string; label: string }) {
+export function MediaUpload({ purpose, inputName, accept, label, listingId, ticketId }: { purpose: "creative" | "verification" | "listing" | "ticket"; inputName: string; accept: string; label: string; listingId?: string; ticketId?: string }) {
   const input = useRef<HTMLInputElement>(null);
   const [assetId, setAssetId] = useState("");
   const [status, setStatus] = useState("No file uploaded.");
@@ -16,6 +16,8 @@ export function MediaUpload({ purpose, inputName, accept, label }: { purpose: "c
     const body = new FormData();
     body.set("file", file);
     body.set("purpose", purpose);
+    if (listingId) body.set("listingId", listingId);
+    if (ticketId) body.set("ticketId", ticketId);
     try {
       const response = await fetch("/api/media/upload", { method: "POST", body });
       const result = await response.json() as { asset?: { id: string; original_name: string; scan_status: string }; error?: string };
@@ -31,7 +33,7 @@ export function MediaUpload({ purpose, inputName, accept, label }: { purpose: "c
   return <div className="upload-control">
     <label>{label}<input ref={input} type="file" accept={accept} /></label>
     <input type="hidden" name={inputName} value={assetId} />
-    <button className="button button-secondary button-small" type="button" disabled={pending} onClick={upload}>{pending ? "Scanning…" : "Upload privately"}</button>
+    <button className="button button-secondary button-small" type="button" disabled={pending} onClick={upload}>{pending ? "Scanning…" : purpose === "listing" ? "Upload listing image" : purpose === "ticket" ? "Attach file" : "Upload privately"}</button>
     <small role="status">{status}</small>
   </div>;
 }

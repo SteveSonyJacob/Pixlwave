@@ -7,7 +7,8 @@ const valid = {
   DATABASE_URL: "postgresql://localhost/pixlwave_test", LOG_LEVEL: "info", AUTH_EMAIL_METHOD: "password",
   AUTH_SMTP_PROVIDER: "smtp-test", AUTH_SMS_PROVIDER: "sms-test", AUTH_OAUTH_PROVIDERS: "google", AUTH_SESSION_IDLE_MINUTES: "60", AUTH_ADMIN_MFA_REQUIRED: "true",
   APP_COMPUTE_REGION: "ap-south-1", DATABASE_REGION: "ap-south-1", OBJECT_STORAGE_REGION: "ap-south-1", BACKUP_REGION: "ap-south-1", LOG_REGION: "ap-south-1",
-  MAPS_PRIMARY_PROVIDER: "mappls", MAPS_FALLBACK_PROVIDER: "google", OBJECT_STORAGE_PROVIDER: "supabase", PAYMENT_PROVIDER: "razorpay"
+  MAPS_PRIMARY_PROVIDER: "openstreetmap", OSM_NOMINATIM_URL: "https://nominatim.openstreetmap.org/search",
+  NEXT_PUBLIC_OSM_TILE_URL: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", OBJECT_STORAGE_PROVIDER: "supabase", PAYMENT_PROVIDER: "razorpay"
 };
 
 describe("configuration boundary", () => {

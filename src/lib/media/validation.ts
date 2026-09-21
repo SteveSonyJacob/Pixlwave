@@ -47,13 +47,15 @@ export function detectMedia(bytes: Uint8Array): DetectedMedia {
   return { ...detected, sha256: createHash("sha256").update(bytes).digest("hex") };
 }
 
-export function validateUpload(input: { bytes: Uint8Array; declaredMime: string; purpose: "creative" | "verification" }) {
-  const maximum = input.purpose === "creative" ? MAX_CREATIVE_BYTES : MAX_VERIFICATION_BYTES;
+export function validateUpload(input: { bytes: Uint8Array; declaredMime: string; purpose: "creative" | "verification" | "listing" | "ticket" }) {
+  const maximum = input.purpose === "verification" || input.purpose === "ticket" ? MAX_VERIFICATION_BYTES : MAX_CREATIVE_BYTES;
   if (input.bytes.byteLength > maximum) throw new Error(`File exceeds the ${maximum / 1024 / 1024} MB limit.`);
   const detected = detectMedia(input.bytes);
   if (detected.mimeType !== input.declaredMime) throw new Error("Declared file type does not match its content signature.");
   if (input.purpose === "creative" && detected.kind === "document") throw new Error("Creative files must be PNG, JPEG, MP4, or WebM.");
   if (input.purpose === "verification" && detected.kind !== "document" && detected.kind !== "image") throw new Error("Verification files must be PDF, PNG, or JPEG.");
+  if (input.purpose === "ticket" && detected.kind !== "document" && detected.kind !== "image") throw new Error("Ticket attachments must be PDF, PNG, or JPEG.");
+  if (input.purpose === "listing" && detected.kind !== "image") throw new Error("Listing media must be PNG or JPEG.");
   const text = new TextDecoder("utf-8", { fatal: false }).decode(input.bytes);
   if (text.includes("EICAR-STANDARD-ANTIVIRUS-TEST-FILE")) throw new Error("Malware test signature detected.");
   return detected;
