@@ -15,10 +15,10 @@ export async function Header() {
         <Brand />
         <nav className="desktop-nav" aria-label="Primary navigation">
           <Link href="/">Home</Link>
+          <Link href="/discover">Discover media</Link>
           <Link href="/map">Explore map</Link>
-          <Link href="/#categories">Media types</Link>
           <Link href="/#process">How it works</Link>
-          <Link href="/#policy">Booking policy</Link>
+          {identity ? <Link href="/support">Support</Link> : <Link href="/#policy">Booking policy</Link>}
         </nav>
         <div className="nav-actions">
           {identity ? (

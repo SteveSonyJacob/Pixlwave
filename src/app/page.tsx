@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getFeaturedInventory, type PublishedListing } from "@/lib/discovery/data";
+import { formatInr } from "@/lib/discovery/domain";
 
 const categories = [
   { icon: "▦", name: "LED screens", unit: "Whole screen · per day", copy: "High-impact digital placements with operating hours and fixed published day rates." },
@@ -6,7 +8,9 @@ const categories = [
   { icon: "↝", name: "Mobile media", unit: "Vehicle route · rotating slot", copy: "Plan across owner-permitted routes with dated, shared rotating capacity." }
 ];
 
-export default function Home() {
+export default async function Home() {
+  let featured: PublishedListing[] = [];
+  try { featured = await getFeaturedInventory(); } catch { /* Public landing page stays useful if inventory is unavailable. */ }
   return (
     <main>
       <section className="hero">
@@ -16,7 +20,8 @@ export default function Home() {
             <h1>Your campaign,<br /><em>everywhere it matters.</em></h1>
             <p>Discover LED screens, theatre moments and mobile media across Kerala—priced clearly and coordinated by a real team.</p>
             <div className="hero-actions">
-              <Link className="button" href="/map">Explore the map <span>→</span></Link>
+              <Link className="button" href="/auth/sign-up">Plan a campaign <span>→</span></Link>
+              <Link className="button button-secondary" href="/map">Explore the map</Link>
               <a className="button button-secondary" href="#process">See how it works</a>
             </div>
             <div className="trust-row">
@@ -35,6 +40,11 @@ export default function Home() {
             <div className="hero-note"><span className="status-dot" /><div><b>Payment received</b><small>Awaiting admin confirmation</small></div></div>
           </div>
         </div>
+      </section>
+
+      <section className="section featured-section" aria-labelledby="featured-heading">
+        <div className="section-heading"><div><span className="eyebrow">Published inventory</span><h2 id="featured-heading">Featured Kerala media</h2></div><p>Admin-approved service terms and fixed published rates. Quotes do not reserve inventory.</p></div>
+        {featured.length ? <div className="featured-grid">{featured.map((listing) => <article className="featured-card" key={listing.id}><span className={`format-mark format-${listing.category}`}>{listing.category === "led" ? "LED" : listing.category === "theatre" ? "THE" : "MOB"}</span><div><span className="inventory-kicker">{listing.locality}, {listing.district}</span><h3>{listing.title}</h3><p>{formatInr(listing.amount_paise)} / {listing.rate_unit.replaceAll("_", " ")}</p></div><Link className="button button-secondary button-small" href={`/media/${listing.id}`}>View media</Link></article>)}</div> : <div className="featured-empty"><p>Published placements will appear here as they are approved.</p><Link className="button button-secondary button-small" href="/discover">Browse discovery</Link></div>}
       </section>
 
       <section className="section" id="categories">
@@ -66,7 +76,7 @@ export default function Home() {
         <div className="policy-stat"><strong>192h</strong><span>Minimum notice before the first operating or show start</span></div>
         <p>Payment alone is not confirmation. Timely advertiser cancellation returns 95% of the cancelled line; owner inability or non-delivery remains reviewable later.</p>
       </section>
-      <footer className="footer"><span>© 2026 Pixlwave</span><span>English · INR · IST · Kerala launch</span><span>Map data © OpenStreetMap contributors</span></footer>
+      <footer className="footer"><span>© 2026 Pixlwave</span><span>English · INR · IST · Kerala launch</span><span>Published discovery is live; payment confirmation remains admin-coordinated</span><span>Map data © OpenStreetMap contributors</span></footer>
     </main>
   );
 }
