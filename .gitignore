@@ -1,9 +1,27 @@
-.next/
+# dependencies and builds
 node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+*.tsbuildinfo
+
+# local configuration and Supabase state
 .env
 .env.*
 !.env.example
-coverage/
-tsconfig.tsbuildinfo
 supabase/.temp/
+supabase/.branches/
+
+# logs and OS/editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# generated evidence
+artifacts/
+test-results/
+playwright-report/
 tmp/

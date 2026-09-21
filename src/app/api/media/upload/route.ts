@@ -18,16 +18,30 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get("file");
   const purpose = form.get("purpose");
-  if (!(file instanceof File) || (purpose !== "creative" && purpose !== "verification")) {
+  const listingId = form.get("listingId");
+  const ticketId = form.get("ticketId");
+  if (!(file instanceof File) || (purpose !== "creative" && purpose !== "verification" && purpose !== "listing" && purpose !== "ticket")) {
     return Response.json({ error: "A file and valid purpose are required." }, { status: 400 });
   }
-  const maximum = purpose === "creative" ? MAX_CREATIVE_BYTES : MAX_VERIFICATION_BYTES;
+  const maximum = purpose === "verification" || purpose === "ticket" ? MAX_VERIFICATION_BYTES : MAX_CREATIVE_BYTES;
   if (file.size > maximum) return Response.json({ error: `File exceeds the ${maximum / 1024 / 1024} MB limit.` }, { status: 413 });
   const limited = await supabase.rpc("check_media_upload_rate");
   if (limited.error) return Response.json({ error: limited.error.message }, { status: 429 });
   if (purpose === "verification") {
     const { data: profile } = await supabase.from("profiles").select("owner_enabled").eq("id", user.id).maybeSingle();
     if (!profile?.owner_enabled) return Response.json({ error: "Owner mode is not enabled." }, { status: 403 });
+  }
+  if (purpose === "listing") {
+    if (typeof listingId !== "string" || !listingId) return Response.json({ error: "A listing is required." }, { status: 400 });
+    const { data: listing } = await supabase.from("inventory_listings").select("id,status").eq("id", listingId).eq("owner_id", user.id).maybeSingle();
+    if (!listing || !["draft", "rejected"].includes(listing.status)) {
+      return Response.json({ error: "Listing images can be changed only while the listing is a draft or rejected." }, { status: 403 });
+    }
+  }
+  if (purpose === "ticket") {
+    if (typeof ticketId !== "string" || !ticketId) return Response.json({ error: "A support ticket is required." }, { status: 400 });
+    const { data: ticket } = await supabase.from("support_tickets").select("id,status").eq("id", ticketId).eq("requester_id", user.id).maybeSingle();
+    if (!ticket || ticket.status === "closed") return Response.json({ error: "Files can be attached only to an active support ticket you created." }, { status: 403 });
   }
 
   try {
@@ -45,10 +59,12 @@ export async function POST(request: Request) {
     const objectKey = `${user.id}/${purpose}/${randomUUID()}-${safeName(file.name)}`;
     const stored = await admin.storage.from(bucket).upload(objectKey, bytes, { contentType: detected.mimeType, upsert: false });
     if (stored.error) throw stored.error;
-    const retentionDays = purpose === "creative" ? 365 : 180;
+    const retentionDays = purpose === "verification" ? 180 : purpose === "ticket" ? 3650 : 365;
     const inserted = await admin.from("private_media_assets").insert({
       uploader_id: user.id,
-      purpose: purpose === "verification" ? "owner_verification" : "creative",
+      purpose: purpose === "verification" ? "owner_verification" : purpose === "listing" ? "listing_media" : purpose === "ticket" ? "support_attachment" : "creative",
+      listing_id: purpose === "listing" ? listingId : null,
+      support_ticket_id: purpose === "ticket" ? ticketId : null,
       object_key: objectKey,
       original_name: safeName(file.name),
       declared_mime: file.type,
