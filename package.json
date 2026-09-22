@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "worker": "tsx src/worker/index.ts",
     "worker:once": "tsx src/worker/index.ts --once",
+    "media:cleanup": "tsx src/worker/index.ts --cleanup-media-only",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:test": "tsx scripts/test-migrations.ts",
     "seed:auth": "tsx scripts/seed-auth.ts",

@@ -23,6 +23,15 @@ describe("P03 discovery quote rules", () => {
     expect(quoteRequestSchema.safeParse({ category: "mobile", listingId, units: [{ date: "12/10/2026", quantity: 1 }] }).success).toBe(false);
   });
 
+  it("rejects duplicate dates and theatre shows before calling the database", () => {
+    expect(quoteRequestSchema.safeParse({ category: "led", listingId, units: [{ date: "2026-10-12" }, { date: "2026-10-12" }] }).success).toBe(false);
+    expect(quoteRequestSchema.safeParse({ category: "mobile", listingId, units: [{ date: "2026-10-12", quantity: 1 }, { date: "2026-10-12", quantity: 1 }] }).success).toBe(false);
+    expect(quoteRequestSchema.safeParse({ category: "theatre", listingId, units: [
+      { showInstanceId: "0fb4d84f-0d47-45d9-9e29-ef7b0664f0fb", quantity: 2 },
+      { showInstanceId: "0fb4d84f-0d47-45d9-9e29-ef7b0664f0fb", quantity: 2 }
+    ] }).success).toBe(false);
+  });
+
   it("invalidates a quote when it expires, the rate changes, or the listing is unpublished", () => {
     const base = { expiresAt: "2026-10-12T10:30:00Z", quotedRateRevisionId: "rate-1", currentRateRevisionId: "rate-1", listingPublished: true };
     expect(isQuoteCurrent(base, new Date("2026-10-12T10:00:00Z"))).toBe(true);

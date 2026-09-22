@@ -39,6 +39,20 @@ async function asAuthenticated(pool: Pool, userId: string, aal: "aal1" | "aal2",
   } finally { client.release(); }
 }
 
+async function asAnonymous(pool: Pool, sql: string, values: unknown[] = []) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("set local role anon");
+    const result = await client.query(sql, values);
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally { client.release(); }
+}
+
 async function assertInventoryWorkflow(pool: Pool) {
   const ownerId = "20000000-0000-0000-0000-000000000001";
   const unverifiedId = "20000000-0000-0000-0000-000000000002";
@@ -63,6 +77,9 @@ async function assertInventoryWorkflow(pool: Pool) {
   const created = await asAuthenticated(pool, ownerId, "aal1", "select (public.create_inventory_listing($1::jsonb)).id", [JSON.stringify(listingPayload)]);
   const listingId = created.rows[0]?.id;
   if (!listingId) throw new Error("Verified owner could not create inventory.");
+  const listingMediaId = "30000000-0000-0000-0000-000000000002";
+  await pool.query(`insert into public.private_media_assets(id,uploader_id,purpose,listing_id,object_key,original_name,declared_mime,detected_mime,byte_size,sha256,pixel_width,pixel_height,scan_status,scan_engine,scan_completed_at,retention_until)
+    values ($1,$2,'listing_media',$3,'fixture/listing.png','listing.png','image/png','image/png',100,$4,1920,1080,'clean','fixture-scan',now(),now()+interval '365 days')`, [listingMediaId, ownerId, listingId, "c".repeat(64)]);
   await asAuthenticated(pool, ownerId, "aal1", "select public.submit_inventory_listing($1)", [listingId]);
   await asAuthenticated(pool, adminId, "aal2", "select public.review_inventory_listing($1,'published',null)", [listingId]);
   const publicRows = await pool.query("select amount_paise from public.published_inventory where id=$1", [listingId]);
@@ -73,7 +90,33 @@ async function assertInventoryWorkflow(pool: Pool) {
   await asAuthenticated(pool, adminId, "aal2", "select public.change_published_rate($1,1300000,'Discussed with fixture owner','Scheduled published rate update')", [listingId]);
   const revised = await pool.query("select amount_paise from public.published_inventory where id=$1", [listingId]);
   if (Number(revised.rows[0]?.amount_paise) !== 1300000) throw new Error("Admin rate revision did not become current.");
-  return { ownerId, unverifiedId, adminId, listingId };
+  return { ownerId, unverifiedId, adminId, listingId, listingMediaId };
+}
+
+async function assertSecurityInvokerPublicViews(
+  pool: Pool,
+  fixture: { listingId: string; listingMediaId: string },
+) {
+  const options = await pool.query<{ relname: string; reloptions: string[] }>(`
+    select c.relname, c.reloptions
+    from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='public' and c.relname in ('published_inventory','published_listing_media')
+  `);
+  if (options.rows.length !== 2 || options.rows.some((row) => !row.reloptions?.includes("security_invoker=true"))) {
+    throw new Error("A public discovery view is not configured as security invoker.");
+  }
+
+  const inventory = await asAnonymous(pool, "select id,amount_paise from public.published_inventory where id=$1", [fixture.listingId]);
+  if (inventory.rows.length !== 1) throw new Error("Anonymous discovery could not read the published inventory view.");
+  const media = await asAnonymous(pool, "select id from public.published_listing_media where id=$1", [fixture.listingMediaId]);
+  if (media.rows.length !== 1) throw new Error("Anonymous discovery could not read clean published listing media.");
+
+  let ownerColumnBlocked = false;
+  try { await asAnonymous(pool, "select owner_id from public.inventory_listings where id=$1", [fixture.listingId]); } catch { ownerColumnBlocked = true; }
+  if (!ownerColumnBlocked) throw new Error("Anonymous access unexpectedly exposed the inventory owner column.");
+  let objectKeyBlocked = false;
+  try { await asAnonymous(pool, "select object_key from public.private_media_assets where id=$1", [fixture.listingMediaId]); } catch { objectKeyBlocked = true; }
+  if (!objectKeyBlocked) throw new Error("Anonymous access unexpectedly exposed a private media object key.");
 }
 
 async function assertSupportAttachmentWorkflow(
@@ -109,6 +152,71 @@ async function assertSupportAttachmentWorkflow(
   if (!retention.rows[0]?.valid) throw new Error("Closing a ticket did not set the 180-day attachment retention period.");
 }
 
+async function assertPhase3QuoteWorkflow(
+  pool: Pool,
+  users: { ownerId: string; adminId: string; listingId: string },
+) {
+  const uniqueLedUnits = [{ date: "2099-01-12" }, { date: "2099-01-13" }];
+  const quote = await asAuthenticated(
+    pool,
+    users.ownerId,
+    "aal1",
+    "select q.id, q.quantity from public.create_quote_snapshot($1,$2::jsonb) q",
+    [users.listingId, JSON.stringify(uniqueLedUnits)],
+  );
+  if (quote.rows[0]?.quantity !== 2 || !quote.rows[0]?.id) throw new Error("A valid quote did not preserve its explicit LED quantity.");
+
+  await asAuthenticated(pool, users.adminId, "aal2", "select public.change_published_rate($1,1400000,'Discussed the fixture rate update','Quote invalidation fixture')", [users.listingId]);
+  const quoteCurrent = await asAuthenticated(pool, users.ownerId, "aal1", "select public.quote_snapshot_is_current($1) as current", [quote.rows[0].id]);
+  if (quoteCurrent.rows[0]?.current !== false) throw new Error("A published rate change did not invalidate the earlier quote.");
+
+  let duplicateLedBlocked = false;
+  try {
+    await asAuthenticated(
+      pool,
+      users.ownerId,
+      "aal1",
+      "select public.create_quote_snapshot($1,$2::jsonb)",
+      [users.listingId, JSON.stringify([{ date: "2099-01-12" }, { date: "2099-01-12" }])],
+    );
+  } catch { duplicateLedBlocked = true; }
+  if (!duplicateLedBlocked) throw new Error("A quote accepted the same LED date more than once.");
+
+  const showStartsAt = "2099-01-15T04:30:00.000Z";
+  const theatrePayload = {
+    category: "theatre", title: "Fixture Theatre Screen", description: "A theatre fixture used to verify unique show capacity and blackout enforcement.",
+    locality: "Kochi", district: "Ernakulam", latitude: 9.9816, longitude: 76.2999, sourceProvider: "openstreetmap", sourcePlaceId: "fixture-osm-theatre",
+    audienceEstimate: 500, audienceBasis: "Fixture owner estimate for repeatable quote validation.", adDurationSeconds: 10, playsPerUnit: 6,
+    operatingStart: "09:00", operatingEnd: "23:00", baseRatePaise: 250000, servicePromise: "One advertising slot in the selected published theatre show instance.",
+    categoryDetails: { venueName: "Fixture Cinema", auditoriumName: "Screen 1", slotsPerShow: 4, showStarts: [showStartsAt] }, blackouts: []
+  };
+  const created = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_inventory_listing($1::jsonb)).id", [JSON.stringify(theatrePayload)]);
+  const theatreId = created.rows[0]?.id;
+  if (!theatreId) throw new Error("The theatre quote fixture could not be created.");
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_inventory_listing($1)", [theatreId]);
+  await asAuthenticated(pool, users.adminId, "aal2", "select public.review_inventory_listing($1,'published',null)", [theatreId]);
+  const show = await pool.query("select id from public.theatre_show_instances where listing_id=$1", [theatreId]);
+  const showId = show.rows[0]?.id;
+  if (!showId) throw new Error("The theatre show fixture was not created.");
+
+  await pool.query("insert into public.listing_blackouts(listing_id,starts_on,ends_on,reason,created_by) values($1,'2099-01-15','2099-01-15','Fixture blackout',$2)", [theatreId, users.adminId]);
+  let blackedOutShowBlocked = false;
+  try {
+    await asAuthenticated(pool, users.ownerId, "aal1", "select public.create_quote_snapshot($1,$2::jsonb)", [theatreId, JSON.stringify([{ showInstanceId: showId, quantity: 1 }])]);
+  } catch { blackedOutShowBlocked = true; }
+  if (!blackedOutShowBlocked) throw new Error("A quote accepted a theatre show on a published blackout date.");
+
+  await pool.query("delete from public.listing_blackouts where listing_id=$1", [theatreId]);
+  let duplicateShowBlocked = false;
+  try {
+    await asAuthenticated(pool, users.ownerId, "aal1", "select public.create_quote_snapshot($1,$2::jsonb)", [theatreId, JSON.stringify([
+      { showInstanceId: showId, quantity: 3 },
+      { showInstanceId: showId, quantity: 3 }
+    ])]);
+  } catch { duplicateShowBlocked = true; }
+  if (!duplicateShowBlocked) throw new Error("A quote exceeded theatre capacity by repeating the same show.");
+}
+
 async function main() {
   loadLocalEnvFile();
   const databaseUrl = process.env.DATABASE_URL;
@@ -134,11 +242,13 @@ async function main() {
   const count = await pool.query("select count(*)::int as count from public.pixlwave_schema_migrations");
   const expectedMigrations = (await migrationFiles()).length;
   if (count.rows[0]?.count !== expectedMigrations) throw new Error("Fresh database did not apply every migration.");
-  const inventory = await pool.query("select to_regclass('public.inventory_listings') as listings, to_regclass('public.published_inventory') as published");
-  if (!inventory.rows[0]?.listings || !inventory.rows[0]?.published) throw new Error("Inventory tables or public projection are missing.");
+  const inventory = await pool.query("select to_regclass('public.inventory_listings') as listings, to_regclass('public.published_inventory') as published, to_regclass('public.media_retention_cleanup_jobs') as cleanup_jobs");
+  if (!inventory.rows[0]?.listings || !inventory.rows[0]?.published || !inventory.rows[0]?.cleanup_jobs) throw new Error("Inventory, public projection, or media-retention cleanup tables are missing.");
   const inventoryWorkflow = await assertInventoryWorkflow(pool);
+  await assertSecurityInvokerPublicViews(pool, inventoryWorkflow);
+  await assertPhase3QuoteWorkflow(pool, inventoryWorkflow);
   await assertSupportAttachmentWorkflow(pool, inventoryWorkflow);
-  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, inventory, and support-attachment workflows.");
+  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, security-invoker public views, inventory, Phase 3 quotes, and support-attachment workflows.");
   } finally { await pool.end(); }
 }
 

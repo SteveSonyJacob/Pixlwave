@@ -5,14 +5,20 @@ import { log } from "../lib/logging";
 import { loadLocalEnvFile } from "../lib/config/load-local-env";
 import { PostgresOutboxStore, processOne, type OutboxEvent } from "./outbox";
 import { deliverEmail } from "./email-delivery";
+import { claimWeeklyRetentionCleanup, cleanupExpiredSupportAttachments, type RetentionDatabase } from "./media-retention";
+import { createAdminSupabaseClient } from "../lib/supabase/admin";
+import { readServerEnv } from "../lib/config/env";
 
 loadLocalEnvFile();
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required by the durable worker.");
 const workerId = `${os.hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
 const once = process.argv.includes("--once");
+const cleanupOnly = process.argv.includes("--cleanup-media-only");
 const pool = new Pool({ connectionString: databaseUrl, max: 5, application_name: "pixlwave-worker" });
 const store = new PostgresOutboxStore(pool);
+let nextRetentionCleanupAt = 0;
+const retentionScheduleCheckMs = 24 * 60 * 60 * 1000;
 
 async function handle(event: OutboxEvent) {
   if (event.topic === "foundation.healthcheck") {
@@ -27,6 +33,7 @@ async function handle(event: OutboxEvent) {
 }
 
 async function cycle() {
+  await runRetentionCleanup();
   const recovered = await store.recoverStaleLocks(15);
   if (recovered) log("warn", "outbox.stale_locks_recovered", { count: recovered });
   const result = await processOne(store, workerId, handle);
@@ -34,8 +41,34 @@ async function cycle() {
   return result.outcome;
 }
 
+async function runRetentionCleanup(force = false) {
+  const now = Date.now();
+  if (!force && now < nextRetentionCleanupAt) return;
+  nextRetentionCleanupAt = now + retentionScheduleCheckMs;
+  try {
+    const env = readServerEnv();
+    const database = pool as unknown as RetentionDatabase;
+    if (!await claimWeeklyRetentionCleanup(database, force)) return;
+    const storage = createAdminSupabaseClient().storage.from(env.MEDIA_PRIVATE_BUCKET);
+    const result = await cleanupExpiredSupportAttachments(database, storage);
+    if (result.deleted || result.failures.length) {
+      log(result.failures.length ? "warn" : "info", "media.retention_cleanup", {
+        scanned: result.scanned,
+        deleted: result.deleted,
+        skipped: result.skipped,
+        failed: result.failures.length,
+      });
+    }
+    if (force && result.failures.length) throw new Error(`${result.failures.length} retained media object(s) could not be deleted.`);
+  } catch (error) {
+    log("error", "media.retention_cleanup_failed", { error: error instanceof Error ? error.message : "unknown cleanup error" });
+    if (force) throw error;
+  }
+}
+
 async function main() {
-  log("info", "worker.started", { workerId, once });
+  log("info", "worker.started", { workerId, once, cleanupOnly });
+  if (cleanupOnly) { await runRetentionCleanup(true); return; }
   if (once) { await cycle(); return; }
   while (true) {
     const outcome = await cycle();

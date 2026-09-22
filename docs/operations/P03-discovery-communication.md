@@ -9,6 +9,7 @@ Updated: 2026-09-19. This phase is in progress; do not use this document as acce
 3. Apply migrations to the target non-production environment with `npm run db:migrate` only after the disposable replay passes.
 4. Run `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:docs`, `npm run build` and `npm run check:client-secrets`.
 5. Publish a P02 listing with a future calendar and verify `/discover`, `/media/:id`, a rate-change-invalidated quote, requester/admin ticket views and internal-note isolation.
+6. Run the durable worker continuously with `npm run worker`. A database-backed gate starts retention cleanup at most once every seven days across restarts. It claims expired support attachments into a service-only retry queue, removes their private storage objects and writes append-only `media.retention.deleted` audit evidence. Operators can force one cleanup cycle with `npm run media:cleanup`; that run resets the weekly schedule and the command fails when any storage deletion remains pending.
 
 The Phase 3 migrations are ordered deliberately. `202609190001` commits the `listing_media` enum value and `202609190004` commits the `support_attachment` enum value before later migrations use them. Do not combine either enum addition into the next migration because PostgreSQL cannot safely use a newly added enum value in the same migration transaction.
 
@@ -20,9 +21,9 @@ If discovery cannot reach Supabase, it displays an unavailable state and never f
 
 ## Open provider work
 
-- Implement Mappls public map markers, clustering and mobile route geometry, then validate representative Kerala locations, quotas and restricted keys.
+- Validate the implemented MapLibre markers, clustering and mobile route geometry against representative Kerala locations and production-capable OpenStreetMap-derived tile/geocoding endpoints. Record quotas, attribution and public-service safeguards.
 - Resend is selected for application email. Configure `APP_EMAIL_PROVIDER=resend`, `RESEND_API_KEY`, `RESEND_FROM` and `RESEND_WEBHOOK_SECRET` only in the worker/application secret store. Register `https://<app-host>/api/webhooks/resend` for sent, delivered, delivery-delayed, bounced, complained, failed and suppressed events. The endpoint verifies the raw-body Svix signature before recording state. Run the durable worker with `npm run worker` and verify an ordinary Gmail delivery plus a controlled bounce. Supabase Auth SMTP alone does not dispatch application notifications.
 - Enable SMS only after the client chooses a TRAI DLT-compliant India OTP/notification path. Otherwise keep SMS suppressed and use in-app/email.
-- Ticket attachments accept PDF/PNG/JPEG only, up to 10 MB, and require a clean signature/scan result before download. The application records a retention deadline of 180 days when an administrator closes the ticket. Add a scheduled cleanup worker that removes the corresponding private storage objects once `retention_until` has passed, and record its deletion evidence.
+- Ticket attachments accept PDF/PNG/JPEG only, up to 10 MB, and require a clean signature/scan result before download. The application records a retention deadline of 180 days when an administrator closes the ticket. The durable worker starts cleanup at most once every seven days; failed object deletions remain in `media_retention_cleanup_jobs` for retry and successful deletions create append-only audit evidence.
 
 Never place SMTP passwords, Resend keys/webhook secrets, Mappls tokens, recipient addresses or ticket bodies in logs or documentation.

@@ -6,10 +6,22 @@ export type DiscoveryCategory = (typeof discoveryCategories)[number];
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a valid date.");
 const uuid = z.string().uuid();
 
+function uniqueUnits<T>(units: T[], key: (unit: T) => string, context: z.RefinementCtx) {
+  const seen = new Set<string>();
+  units.forEach((unit, index) => {
+    const value = key(unit);
+    if (seen.has(value)) context.addIssue({ code: "custom", path: [index], message: "Choose each inventory unit only once." });
+    seen.add(value);
+  });
+}
+
 export const quoteRequestSchema = z.discriminatedUnion("category", [
-  z.object({ category: z.literal("led"), listingId: uuid, units: z.array(z.object({ date: isoDate })).min(1).max(31) }),
-  z.object({ category: z.literal("theatre"), listingId: uuid, units: z.array(z.object({ showInstanceId: uuid, quantity: z.number().int().min(1).max(50) })).min(1).max(31) }),
+  z.object({ category: z.literal("led"), listingId: uuid, units: z.array(z.object({ date: isoDate })).min(1).max(31) })
+    .superRefine((request, context) => uniqueUnits(request.units, (unit) => unit.date, context)),
+  z.object({ category: z.literal("theatre"), listingId: uuid, units: z.array(z.object({ showInstanceId: uuid, quantity: z.number().int().min(1).max(50) })).min(1).max(31) })
+    .superRefine((request, context) => uniqueUnits(request.units, (unit) => unit.showInstanceId, context)),
   z.object({ category: z.literal("mobile"), listingId: uuid, units: z.array(z.object({ date: isoDate, quantity: z.number().int().min(1).max(30) })).min(1).max(31) })
+    .superRefine((request, context) => uniqueUnits(request.units, (unit) => unit.date, context))
 ]);
 
 export type QuoteRequest = z.infer<typeof quoteRequestSchema>;

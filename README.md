@@ -29,4 +29,6 @@ npm run lint
 npm run build
 ```
 
+`npm run worker` processes durable notification delivery and performs support-attachment retention cleanup at most once every seven days using a database-backed schedule that survives worker restarts. `npm run media:cleanup` forces a single cleanup cycle for an operations check and resets the next weekly run; it exits unsuccessfully if any object deletion fails. Apply all migrations before starting either command.
+
 The pre-development and pre-build hooks copy MapLibre's CSP-friendly worker files into `public/maplibre`.
