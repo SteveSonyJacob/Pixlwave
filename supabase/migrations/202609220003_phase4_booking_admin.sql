@@ -281,7 +281,7 @@ $$;
 
 create or replace function public.record_trusted_cart_payment(target_cart uuid, external_reference text, captured_at timestamptz, adapter text)
 returns public.booking_carts security definer language plpgsql set search_path='' as $$
-declare result public.booking_carts; line public.booking_lines; window jsonb; admin_record record; payment_eligible boolean; failure_reason text;
+declare result public.booking_carts; line public.booking_lines; service_window jsonb; admin_record record; payment_eligible boolean; failure_reason text;
 begin
   if adapter not in ('p04_fixture','razorpay') then raise exception 'unrecognized payment adapter'; end if;
   if adapter='p04_fixture' and (lower(current_database()) not like '%test%' or current_setting('app.p04_fixture_funding',true)<>'enabled') then raise exception 'fixture funding is restricted to an explicitly enabled test database' using errcode='42501'; end if;
@@ -304,8 +304,8 @@ begin
   for line in select * from public.booking_lines where cart_id=target_cart for update loop
     payment_eligible := captured_at<=result.checkout_expires_at;
     failure_reason := case when payment_eligible then null else 'Trusted capture arrived after the accepted checkout snapshot expired.' end;
-    for window in select value from jsonb_array_elements(line.service_windows) order by value->>'unitKey' loop
-      if (window->>'startsAt')::timestamptz < captured_at+interval '192 hours' then payment_eligible := false; failure_reason := 'Trusted capture occurred too late for the 192-hour service notice.'; exit; end if;
+    for service_window in select value from jsonb_array_elements(line.service_windows) order by value->>'unitKey' loop
+      if (service_window->>'startsAt')::timestamptz < captured_at+interval '192 hours' then payment_eligible := false; failure_reason := 'Trusted capture occurred too late for the 192-hour service notice.'; exit; end if;
     end loop;
     if not payment_eligible then
       update public.booking_lines set status='payment_ineligible',decided_at=captured_at,decision_reason=failure_reason where id=line.id returning * into line;
@@ -336,7 +336,7 @@ $$;
 
 create or replace function public.decide_booking_line(target_line uuid, decision text, reason text, agreed_route jsonb default null)
 returns public.booking_lines security definer language plpgsql set search_path='' as $$
-declare line public.booking_lines; window jsonb; used integer; capacity integer; unit_quantity integer; key text; chosen_route jsonb; custom_requested boolean; existing_custom jsonb; admin_record record;
+declare line public.booking_lines; service_window jsonb; used integer; capacity integer; unit_quantity integer; key text; chosen_route jsonb; custom_requested boolean; existing_custom jsonb; admin_record record;
 begin
   if not public.is_admin_aal2() then raise exception 'administrator AAL2 required' using errcode='42501'; end if;
   if decision not in ('approved','rejected') then raise exception 'invalid booking decision'; end if;
@@ -361,9 +361,9 @@ begin
       if chosen_route is null or not public.valid_geojson_linestring(chosen_route::text) then raise exception 'admin must record a valid owner-agreed route'; end if;
       if not custom_requested and agreed_route is not null and not public.valid_geojson_linestring(agreed_route::text) then raise exception 'owner-agreed route must be a valid GeoJSON LineString'; end if;
     end if;
-    for window in select value from jsonb_array_elements(line.service_windows) order by value->>'unitKey' loop
-      key := window->>'unitKey'; capacity := (window->>'capacity')::integer;
-      unit_quantity := case when line.category='led' then 1 else (window->>'quantity')::integer end;
+    for service_window in select value from jsonb_array_elements(line.service_windows) order by value->>'unitKey' loop
+      key := service_window->>'unitKey'; capacity := (service_window->>'capacity')::integer;
+      unit_quantity := case when line.category='led' then 1 else (service_window->>'quantity')::integer end;
       perform pg_advisory_xact_lock(hashtextextended(line.listing_id::text||':'||key,0));
       select coalesce(sum(quantity),0) into used from public.booking_allocations where listing_id=line.listing_id and unit_key=key and released_at is null;
       if used+unit_quantity>capacity then raise exception 'requested inventory capacity is no longer available'; end if;
@@ -374,7 +374,7 @@ begin
         if not custom_requested and existing_custom is not null and existing_custom<>chosen_route then raise exception 'shared booking must use the committed custom route'; end if;
       end if;
       insert into public.booking_allocations(booking_line_id,listing_id,unit_key,service_starts_at,quantity,amount_paise,route_is_custom,route_snapshot)
-      values(line.id,line.listing_id,key,(window->>'startsAt')::timestamptz,unit_quantity,line.unit_amount_paise*unit_quantity,custom_requested,chosen_route);
+      values(line.id,line.listing_id,key,(service_window->>'startsAt')::timestamptz,unit_quantity,line.unit_amount_paise*unit_quantity,custom_requested,chosen_route);
     end loop;
     update public.booking_lines set status='approved',decided_at=now(),decided_by=auth.uid(),decision_reason=trim(reason) where id=line.id returning * into line;
     insert into public.booking_events(cart_id,booking_line_id,actor_id,event_type,payload) values(line.cart_id,line.id,auth.uid(),'booking.approved',jsonb_build_object('reason',trim(reason),'route',chosen_route));
