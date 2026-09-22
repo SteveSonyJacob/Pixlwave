@@ -29,6 +29,8 @@ npm run lint
 npm run build
 ```
 
-`npm run worker` processes durable notification delivery and performs support-attachment retention cleanup at most once every seven days using a database-backed schedule that survives worker restarts. `npm run media:cleanup` forces a single cleanup cycle for an operations check and resets the next weekly run; it exits unsuccessfully if any object deletion fails. Apply all migrations before starting either command.
+`npm run worker` processes durable notification delivery, checks booking review reminders/deadlines each minute, and performs support-attachment retention cleanup at most once every seven days using database-backed state. Deadline expiry rejects still-pending lines and creates manual refund obligations; it never sends money. `npm run media:cleanup` forces a single cleanup cycle for an operations check and resets the next weekly run; it exits unsuccessfully if any object deletion fails. Apply all migrations before starting either command.
+
+Phase 4 adds `/cart`, `/bookings` and the MFA-protected `/admin/bookings` queue. Browser payment intentionally remains unavailable until Phase 5. For Phase 4 acceptance only, `npm run fixture:fund-cart -- <cart-uuid> [captured-at-iso]` can cross the trusted payment boundary when `P04_FIXTURE_FUNDING_ENABLED=true`; both the command and database function refuse fixture funding unless the database name contains `test`.
 
 The pre-development and pre-build hooks copy MapLibre's CSP-friendly worker files into `public/maplibre`.

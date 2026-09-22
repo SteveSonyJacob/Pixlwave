@@ -1,6 +1,6 @@
 # Pixlwave decision register
 
-Version: 1.0 draft. Updated: 2026-09-21.
+Version: 1.0 draft. Updated: 2026-09-22.
 Source: latest client workflow clarification and subsequent user answers, including exact 192/168-hour timing, admin-determined partial refunds and the final processing-charge-only rule for rejection/owner failure.
 
 ## Current authority
@@ -8,6 +8,8 @@ Source: latest client workflow clarification and subsequent user answers, includ
 The latest client rules supersede conflicting earlier answers, the frontend blueprint, and previous plan versions. The user authorized maintaining the draft while unanswered details remain. A PARTIAL status reopens only the named details, not the accepted rule.
 
 Current model: advertiser pays for the whole cart at submission; admin manually coordinates with owners and decides each request within seven days of successful payment. Paid requests do not reserve inventory. Only admin approval reserves capacity. Advertiser cancellation within the same seven-day period refunds 95% of the cancelled booking amount; Pixlwave retains 5% inclusive of Razorpay processing charges, without an additional processing deduction. Ordinary refund eligibility ends at seven days; owner inability/non-delivery is the business exception. Admin controls published price changes after discussing with the owner. There is no dynamic pricing or pause/change workflow.
+
+Phase 4 implementation note (2026-09-22): the current working tree now encodes D01-D07 and D13 through frozen carts, immutable quote/service/creative line snapshots, a service-role-only trusted capture interface, approval-only allocations, exact 168/192-hour comparisons, 95/5 cancellation obligations, deadline rejection and manual-refund tasks. This records implementation, not acceptance: database replay/race evidence and manual review remain open, and P05 must replace the fixture adapter with verified Razorpay sandbox capture.
 
 Phase references below use the seven-phase v0.9 roadmap. See [phase/test migration](phase-mapping.md) for older references. This restructuring does not reopen accepted business policies.
 

@@ -19,6 +19,7 @@ export async function Header() {
           <Link href="/map">Explore map</Link>
           <Link href="/#process">How it works</Link>
           {identity ? <Link href="/support">Support</Link> : <Link href="/#policy">Booking policy</Link>}
+          {identity?.advertiserEnabled ? <Link href="/cart">Cart</Link> : null}
         </nav>
         <div className="nav-actions">
           {identity ? (

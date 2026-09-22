@@ -8,6 +8,7 @@ import { deliverEmail } from "./email-delivery";
 import { claimWeeklyRetentionCleanup, cleanupExpiredSupportAttachments, type RetentionDatabase } from "./media-retention";
 import { createAdminSupabaseClient } from "../lib/supabase/admin";
 import { readServerEnv } from "../lib/config/env";
+import { processBookingDeadlines } from "./booking-deadlines";
 
 loadLocalEnvFile();
 const databaseUrl = process.env.DATABASE_URL;
@@ -18,7 +19,9 @@ const cleanupOnly = process.argv.includes("--cleanup-media-only");
 const pool = new Pool({ connectionString: databaseUrl, max: 5, application_name: "pixlwave-worker" });
 const store = new PostgresOutboxStore(pool);
 let nextRetentionCleanupAt = 0;
+let nextBookingDeadlineCheckAt = 0;
 const retentionScheduleCheckMs = 24 * 60 * 60 * 1000;
+const bookingDeadlineCheckMs = 60 * 1000;
 
 async function handle(event: OutboxEvent) {
   if (event.topic === "foundation.healthcheck") {
@@ -34,11 +37,20 @@ async function handle(event: OutboxEvent) {
 
 async function cycle() {
   await runRetentionCleanup();
+  await runBookingDeadlineChecks();
   const recovered = await store.recoverStaleLocks(15);
   if (recovered) log("warn", "outbox.stale_locks_recovered", { count: recovered });
   const result = await processOne(store, workerId, handle);
   if (result.outcome !== "empty") log(result.outcome === "completed" ? "info" : "warn", `outbox.${result.outcome}`, { eventId: result.event.id, topic: result.event.topic, attempts: result.event.attempts });
   return result.outcome;
+}
+
+async function runBookingDeadlineChecks() {
+  const now = Date.now();
+  if (now < nextBookingDeadlineCheckAt) return;
+  nextBookingDeadlineCheckAt = now + bookingDeadlineCheckMs;
+  const result = await processBookingDeadlines(pool);
+  if (result.reminders || result.expired) log("info", "booking.deadline_cycle", result);
 }
 
 async function runRetentionCleanup(force = false) {

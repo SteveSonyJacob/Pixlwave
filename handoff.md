@@ -1,7 +1,7 @@
 # Pixlwave development handoff guide
 
 Version: 1.0 draft. Updated: 2026-09-21.
-Status: implementation in progress; OpenStreetMap/MapLibre mapping slice implemented and tested.
+Status: implementation in progress through the Phase 4 booking/admin slice; external-provider and manual acceptance remain open.
 
 ## Read before continuing
 
@@ -28,10 +28,10 @@ Status: implementation in progress; OpenStreetMap/MapLibre mapping slice impleme
 
 | Phase | Handoff | Status |
 | --- | --- | --- |
-| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | NOT STARTED |
-| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | NOT STARTED |
-| P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | NOT STARTED |
-| P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | NOT STARTED |
+| P01 | [Foundation and accounts](docs/handoffs/P01-foundation-accounts.md) | COMPLETED |
+| P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | IN PROGRESS |
+| P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | IN PROGRESS |
+| P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | IN PROGRESS |
 | P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | NOT STARTED |
 | P06 | [Fulfillment and settlement](docs/handoffs/P06-fulfillment-settlement.md) | NOT STARTED |
 | P07 | [Production validation and launch](docs/handoffs/P07-production-launch.md) | NOT STARTED |
@@ -65,7 +65,7 @@ Manual refunds and owner payouts remain manual. Restore/retry handling must reco
 
 ## Current state and next action
 
-An application baseline now exists. The OpenStreetMap/MapLibre mapping slice, local provider migration, tests and production build are complete in the current working tree. The migration has not been applied to a linked database, the application has not been deployed, and client/manual map acceptance remains outstanding. Other phase checklists are not implied complete.
+An application baseline now exists through the Phase 4 booking/admin implementation. Frozen carts, a test-only trusted funding boundary, unreserved paid review, atomic admin capacity decisions, exact deadline/cancellation rules, manual refund obligations and booking notifications are implemented in the current working tree. Static/unit/build checks pass. The Phase 4 migration has not been replayed against a disposable `pixlwave_test` database because the configured database is a linked non-test database and the destructive guard refused it. The application has not been deployed; provider and client/manual acceptance remain outstanding.
 
 Continue the remaining phase work using current accepted rules. Before editing existing listings in a linked environment, review and apply the OpenStreetMap provider migration, configure production-capable tile/geocoding endpoints as needed, and complete representative Kerala browser acceptance.
 

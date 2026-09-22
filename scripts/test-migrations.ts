@@ -53,6 +53,21 @@ async function asAnonymous(pool: Pool, sql: string, values: unknown[] = []) {
   } finally { client.release(); }
 }
 
+async function asService(pool: Pool, sql: string, values: unknown[] = []) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query("set local role service_role");
+    await client.query("select set_config('app.p04_fixture_funding','enabled',true)");
+    const result = await client.query(sql, values);
+    await client.query("commit");
+    return result;
+  } catch (error) {
+    await client.query("rollback");
+    throw error;
+  } finally { client.release(); }
+}
+
 async function assertInventoryWorkflow(pool: Pool) {
   const ownerId = "20000000-0000-0000-0000-000000000001";
   const unverifiedId = "20000000-0000-0000-0000-000000000002";
@@ -217,6 +232,54 @@ async function assertPhase3QuoteWorkflow(
   if (!duplicateShowBlocked) throw new Error("A quote exceeded theatre capacity by repeating the same show.");
 }
 
+async function assertPhase4BookingWorkflow(
+  pool: Pool,
+  users: { ownerId: string; unverifiedId: string; adminId: string; listingId: string },
+) {
+  const creativeId = "50000000-0000-0000-0000-000000000001";
+  await pool.query(`insert into public.private_media_assets(id,uploader_id,purpose,object_key,original_name,declared_mime,detected_mime,byte_size,sha256,pixel_width,pixel_height,scan_status,scan_engine,scan_completed_at,retention_until)
+    values($1,$2,'creative','fixture/creative.png','creative.png','image/png','image/png',100,$3,1920,1080,'clean','fixture-scan',now(),now()+interval '365 days')`, [creativeId, users.ownerId, "d".repeat(64)]);
+  const units = JSON.stringify([{ date: "2099-02-10" }]);
+  const quote1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, units]);
+  const quote2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, units]);
+  const line1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote1.rows[0].id, creativeId]);
+  const line2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote2.rows[0].id, creativeId]);
+  const cartId = line1.rows[0]?.cart_id;
+  if (!cartId || line2.rows[0]?.cart_id !== cartId) throw new Error("Current quotes did not join the same open cart.");
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_booking_cart($1)", [cartId]);
+  const capturedAt = new Date().toISOString();
+  await asService(pool, "select public.record_trusted_cart_payment($1,$2,$3,'p04_fixture')", [cartId, "p04-fixture-capacity", capturedAt]);
+
+  const paid = await pool.query("select status,decision_due_at=$2::timestamptz+interval '168 hours' as exact_due from public.booking_lines where cart_id=$1 order by created_at", [cartId, capturedAt]);
+  if (paid.rows.some((row) => row.status !== "paid_pending" || !row.exact_due)) throw new Error("Trusted payment did not create exact unreserved paid-pending lines.");
+  const beforeApproval = await pool.query("select count(*)::int as count from public.booking_allocations where booking_line_id in ($1,$2)", [line1.rows[0].id, line2.rows[0].id]);
+  if (beforeApproval.rows[0]?.count !== 0) throw new Error("Paid-pending lines unexpectedly reserved inventory.");
+
+  let ownerDecisionBlocked = false;
+  try { await asAuthenticated(pool, users.ownerId, "aal1", "select public.decide_booking_line($1,'approved','Unauthorized owner attempt',null)", [line1.rows[0].id]); } catch { ownerDecisionBlocked = true; }
+  if (!ownerDecisionBlocked) throw new Error("A non-admin unexpectedly decided a booking.");
+  await asAuthenticated(pool, users.adminId, "aal2", "select (public.decide_booking_line($1,'approved','Owner confirmed fixture availability',null)).status", [line1.rows[0].id]);
+  let oversellBlocked = false;
+  try { await asAuthenticated(pool, users.adminId, "aal2", "select public.decide_booking_line($1,'approved','Competing fixture approval',null)", [line2.rows[0].id]); } catch { oversellBlocked = true; }
+  if (!oversellBlocked) throw new Error("Two LED lines acquired the same approved date.");
+  await asAuthenticated(pool, users.adminId, "aal2", "select public.decide_booking_line($1,'rejected','Capacity already committed',null)", [line2.rows[0].id]);
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.cancel_booking_line($1)", [line1.rows[0].id]);
+  const cancelled = await pool.query("select r.refund_amount_paise,r.fee_amount_paise,l.paid_amount_paise,a.released_at is not null as released from public.refund_obligations r join public.booking_lines l on l.id=r.booking_line_id join public.booking_allocations a on a.booking_line_id=l.id where l.id=$1", [line1.rows[0].id]);
+  const cancellation = cancelled.rows[0];
+  if (!cancellation?.released || Number(cancellation.refund_amount_paise) * 100 !== Number(cancellation.paid_amount_paise) * 95 || Number(cancellation.fee_amount_paise) * 100 !== Number(cancellation.paid_amount_paise) * 5) throw new Error("Cancellation did not release capacity and create the exact 95/5 manual refund obligation.");
+
+  const nearDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const quote3 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, JSON.stringify([{ date: nearDate }])]);
+  const newLine = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote3.rows[0].id, creativeId]);
+  if (newLine.rows[0]?.cart_id === cartId) throw new Error("An addition changed frozen cart membership instead of using a new cart.");
+  const unrelated = await asAuthenticated(pool, users.unverifiedId, "aal1", "select id from public.booking_lines where cart_id=$1", [cartId]);
+  if (unrelated.rows.length) throw new Error("An unrelated account read another advertiser's booking lines.");
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_booking_cart($1)", [newLine.rows[0].cart_id]);
+  await asService(pool, "select public.record_trusted_cart_payment($1,$2,$3,'p04_fixture')", [newLine.rows[0].cart_id, "p04-fixture-late-capture", new Date().toISOString()]);
+  const lateCapture = await pool.query("select l.status,r.reason,r.refund_amount_paise=l.paid_amount_paise as full_refund from public.booking_lines l join public.refund_obligations r on r.booking_line_id=l.id where l.id=$1", [newLine.rows[0].id]);
+  if (lateCapture.rows[0]?.status !== "payment_ineligible" || lateCapture.rows[0]?.reason !== "payment_ineligible" || !lateCapture.rows[0]?.full_refund) throw new Error("An ineligible late capture was not preserved as paid money with a full manual refund obligation.");
+}
+
 async function main() {
   loadLocalEnvFile();
   const databaseUrl = process.env.DATABASE_URL;
@@ -248,7 +311,8 @@ async function main() {
   await assertSecurityInvokerPublicViews(pool, inventoryWorkflow);
   await assertPhase3QuoteWorkflow(pool, inventoryWorkflow);
   await assertSupportAttachmentWorkflow(pool, inventoryWorkflow);
-  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, security-invoker public views, inventory, Phase 3 quotes, and support-attachment workflows.");
+  await assertPhase4BookingWorkflow(pool, inventoryWorkflow);
+  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, security-invoker public views, inventory, Phase 3 quotes/support, and Phase 4 booking workflows.");
   } finally { await pool.end(); }
 }
 

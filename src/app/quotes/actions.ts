@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireIdentity } from "@/lib/auth/identity";
+import { inclusiveIsoDates } from "@/lib/booking/domain";
 import { quoteRequestSchema } from "@/lib/discovery/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -16,9 +17,17 @@ export async function createQuote(form: FormData) {
   if (!identity.advertiserEnabled) quoteError(listingId, "Advertiser mode is required to create a quote.");
 
   let input: unknown;
-  if (category === "theatre") input = { category, listingId, units: [{ showInstanceId: String(form.get("showInstanceId") ?? ""), quantity: Number(form.get("quantity")) }] };
-  else if (category === "mobile") input = { category, listingId, units: [{ date: String(form.get("date") ?? ""), quantity: Number(form.get("quantity")) }] };
-  else input = { category, listingId, units: [{ date: String(form.get("date") ?? "") }] };
+  if (category === "theatre") {
+    input = { category, listingId, units: form.getAll("showInstanceIds").map((showInstanceId) => ({ showInstanceId: String(showInstanceId), quantity: Number(form.get("quantity")) })) };
+  } else {
+    const start = String(form.get("startDate") ?? "");
+    const end = String(form.get("endDate") ?? start);
+    let dates: string[];
+    try { dates = inclusiveIsoDates(start, end); } catch (error) { quoteError(listingId, error instanceof Error ? error.message : "Choose a valid date range."); }
+    input = category === "mobile"
+      ? { category, listingId, units: dates.map((date) => ({ date, quantity: Number(form.get("quantity")) })) }
+      : { category, listingId, units: dates.map((date) => ({ date })) };
+  }
 
   const parsed = quoteRequestSchema.safeParse(input);
   if (!parsed.success) quoteError(listingId, parsed.error.issues[0]?.message ?? "Choose a valid inventory unit.");
