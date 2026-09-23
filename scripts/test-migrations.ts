@@ -240,10 +240,15 @@ async function assertPhase4BookingWorkflow(
   await pool.query(`insert into public.private_media_assets(id,uploader_id,purpose,object_key,original_name,declared_mime,detected_mime,byte_size,sha256,pixel_width,pixel_height,scan_status,scan_engine,scan_completed_at,retention_until)
     values($1,$2,'creative','fixture/creative.png','creative.png','image/png','image/png',100,$3,1920,1080,'clean','fixture-scan',now(),now()+interval '365 days')`, [creativeId, users.ownerId, "d".repeat(64)]);
   const units = JSON.stringify([{ date: "2099-02-10" }]);
-  const quote1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, units]);
-  const quote2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, units]);
-  const line1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote1.rows[0].id, creativeId]);
-  const line2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote2.rows[0].id, creativeId]);
+  const quote1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id as quote_id", [users.listingId, units]);
+  const quote2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id as quote_id", [users.listingId, units]);
+  const quote1Id = String(quote1.rows[0]?.quote_id ?? "");
+  const quote2Id = String(quote2.rows[0]?.quote_id ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(quote1Id) || !/^[0-9a-f-]{36}$/i.test(quote2Id) || quote1Id === quote2Id) throw new Error("Fixture quote creation did not return two distinct UUIDs.");
+  const preexistingLines = await pool.query("select quote_id from public.booking_lines where quote_id in ($1,$2)", [quote1Id, quote2Id]);
+  if (preexistingLines.rows.length) throw new Error("Fresh Phase 4 fixture unexpectedly found an existing booking line for a newly created quote.");
+  const line1 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote1Id, creativeId]);
+  const line2 = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote2Id, creativeId]);
   const cartId = line1.rows[0]?.cart_id;
   if (!cartId || line2.rows[0]?.cart_id !== cartId) throw new Error("Current quotes did not join the same open cart.");
   await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_booking_cart($1)", [cartId]);

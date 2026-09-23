@@ -238,7 +238,12 @@ begin
   insert into public.booking_lines(cart_id,quote_id,advertiser_id,listing_id,category,requested_units,service_windows,quantity,unit_amount_paise,paid_amount_paise,currency,listing_snapshot,service_snapshot,creative_asset_id,creative_snapshot,request_configuration)
   values(cart.id,q.id,q.requester_id,q.listing_id,q.category,q.requested_units,windows,q.quantity,q.unit_amount_paise,q.total_amount_paise,q.currency,q.listing_snapshot,approved,asset.id,
     jsonb_build_object('assetId',asset.id,'name',asset.original_name,'mime',asset.detected_mime,'sha256',asset.sha256,'width',asset.pixel_width,'height',asset.pixel_height,'durationSeconds',asset.duration_seconds),configuration)
-  returning * into result;
+  on conflict(quote_id) do nothing returning * into result;
+  if result.id is null then
+    select * into result from public.booking_lines where quote_id=q.id and advertiser_id=auth.uid();
+    if result.id is null then raise exception 'quote is already attached to another advertiser cart' using errcode='42501'; end if;
+    return result;
+  end if;
   update public.booking_carts set total_amount_paise=total_amount_paise+result.paid_amount_paise where id=cart.id;
   insert into public.audit_log(actor_id,action,subject_type,subject_id,metadata) values(auth.uid(),'booking.cart.line_added','booking_line',result.id::text,jsonb_build_object('cartId',cart.id,'quoteId',q.id));
   return result;
