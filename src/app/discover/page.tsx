@@ -5,7 +5,7 @@ import { searchPublishedInventory, type PublishedListing } from "@/lib/discovery
 import { keralaDistricts } from "@/lib/inventory/domain";
 
 export const metadata: Metadata = { title: "Discover media" };
-type PageProps = { searchParams: Promise<{ q?: string; category?: string; district?: string; max?: string; date?: string }> };
+type PageProps = { searchParams: Promise<{ q?: string; category?: string; district?: string; max?: string }> };
 
 const categoryName = { led: "LED / digital", theatre: "Theatre", mobile: "Mobile billboard" } as const;
 
@@ -21,7 +21,6 @@ export default async function DiscoverPage({ searchParams }: PageProps) {
       <label>Format<select name="category" defaultValue={filters.category ?? ""}><option value="">All formats</option><option value="led">LED / digital</option><option value="theatre">Theatre</option><option value="mobile">Mobile billboard</option></select></label>
       <label>District<select name="district" defaultValue={filters.district ?? ""}><option value="">All Kerala</option>{keralaDistricts.map((district) => <option key={district}>{district}</option>)}</select></label>
       <label>Maximum ₹ / unit<input name="max" type="number" min="100" step="100" defaultValue={filters.max} /></label>
-      <label>Required date<input name="date" type="date" defaultValue={filters.date} /></label>
       <button className="button button-small">Apply filters</button>
     </form>
     <div className="result-heading"><b>{listings.length} published {listings.length === 1 ? "placement" : "placements"}</b><span>Quotes do not reserve inventory.</span></div>

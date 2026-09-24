@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { getFeaturedInventory, type PublishedListing } from "@/lib/discovery/data";
 import { formatInr } from "@/lib/discovery/domain";
+import { keralaDistricts } from "@/lib/inventory/domain";
 
 const categories = [
-  { icon: "▦", name: "LED screens", unit: "Whole screen · per day", copy: "High-impact digital placements with operating hours and fixed published day rates." },
-  { icon: "▶", name: "Theatre slots", unit: "Specific show · per slot", copy: "Choose visible show instances and approved pre-show duration and play commitments." },
-  { icon: "↝", name: "Mobile media", unit: "Vehicle route · rotating slot", copy: "Plan across owner-permitted routes with dated, shared rotating capacity." }
+  { icon: "▦", slug: "led", name: "LED screens", unit: "Whole screen · per day", copy: "High-impact digital placements with operating hours and fixed published day rates." },
+  { icon: "▶", slug: "theatre", name: "Theatre slots", unit: "Specific show · per slot", copy: "Choose visible show instances and approved pre-show duration and play commitments." },
+  { icon: "↝", slug: "mobile", name: "Mobile media", unit: "Vehicle route · rotating slot", copy: "Plan across owner-permitted routes with dated, shared rotating capacity." }
 ];
 
 export default async function Home() {
@@ -37,9 +38,20 @@ export default async function Home() {
               <i className="post post-one" /><i className="post post-two" />
             </div>
             <div className="coast-line" />
-            <div className="hero-note"><span className="status-dot" /><div><b>Payment received</b><small>Awaiting admin confirmation</small></div></div>
+            <div className="hero-note"><span className="status-dot" /><div><b>Published media</b><small>Explore before you request a quote</small></div></div>
           </div>
         </div>
+      </section>
+
+      <section className="home-search section" aria-labelledby="home-search-heading">
+        <div><span className="eyebrow">Start with a place</span><h2 id="home-search-heading">Find media across Kerala</h2><p>Search published placements by location, format and rate.</p></div>
+        <form action="/discover" method="get" className="home-search-form">
+          <label>Place or media name<input name="q" placeholder="City, locality or screen" /></label>
+          <label>Format<select name="category" defaultValue=""><option value="">All formats</option><option value="led">LED screens</option><option value="theatre">Theatre slots</option><option value="mobile">Mobile media</option></select></label>
+          <label>District<select name="district" defaultValue=""><option value="">All Kerala</option>{keralaDistricts.map((district) => <option key={district} value={district}>{district}</option>)}</select></label>
+          <label>Maximum ₹ / unit<input name="max" type="number" min="100" step="100" placeholder="Any price" /></label>
+          <button className="button" type="submit">Search media</button>
+        </form>
       </section>
 
       <section className="section featured-section" aria-labelledby="featured-heading">
@@ -54,14 +66,14 @@ export default async function Home() {
             <article className={`category-card category-${index + 1}`} key={category.name}>
               <div className="category-icon">{category.icon}</div><span className="category-index">0{index + 1}</span>
               <h3>{category.name}</h3><b>{category.unit}</b><p>{category.copy}</p>
-              <span className="coming">Owner inventory management ready</span>
+              <Link className="coming" href={`/discover?category=${category.slug}`}>Browse format →</Link>
             </article>
           ))}
         </div>
       </section>
 
       <section className="process-section" id="process">
-        <div className="process-copy"><span className="eyebrow eyebrow-light">A calmer booking process</span><h2>One payment.<br />Clear decisions.</h2><p>You pay once for the frozen cart. Payment starts the review clock, but it does not reserve inventory. Pixlwave coordinates with every owner and confirms each item separately.</p><Link href="/auth/sign-up" className="button button-mint">Create your account →</Link></div>
+        <div className="process-copy"><span className="eyebrow eyebrow-light">A calmer booking process</span><h2>One payment.<br />Clear decisions.</h2><p>When checkout becomes available, you will pay once for the frozen cart. Payment starts the review clock, but it does not reserve inventory. Pixlwave coordinates with every owner and confirms each item separately.</p><Link href="/auth/sign-up" className="button button-mint">Create your account →</Link></div>
         <ol className="timeline">
           <li><span>01</span><div><h3>Build one cart</h3><p>Select dated media units and the exact creative version. New additions use a new cart.</p></div></li>
           <li><span>02</span><div><h3>Pay once, upfront</h3><p>All submitted items are included. The cart stays unreserved while review is pending.</p></div></li>

@@ -66,6 +66,14 @@ export function InventoryMap() {
   const [category, setCategory] = useState<"all" | InventoryItem["category"]>("all");
   const [district, setDistrict] = useState("all");
   const [message, setMessage] = useState("Loading published inventory…");
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [mobileView, setMobileView] = useState<"list" | "map">("list");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (mobileView === "map") mapRef.current?.resize();
+  }, [mobileView]);
 
   useEffect(() => {
     void fetch("/api/inventory/published")
@@ -75,7 +83,8 @@ export function InventoryMap() {
         setInventory(body.inventory ?? []);
         setMessage(`${body.inventory?.length ?? 0} published location(s). Availability is confirmed only after admin approval.`);
       })
-      .catch(() => setMessage("Published inventory is temporarily unavailable."));
+      .catch(() => { setLoadFailed(true); setMessage("Published inventory is temporarily unavailable."); })
+      .finally(() => setLoading(false));
   }, []);
 
   const districts = useMemo(() => [...new Set(inventory.map((item) => item.district))].sort(), [inventory]);
@@ -120,6 +129,7 @@ export function InventoryMap() {
         const feature = event.features?.[0];
         if (!feature || feature.geometry.type !== "Point") return;
         const properties = feature.properties ?? {};
+        setSelectedId(String(properties.id ?? ""));
         const content = document.createElement("div");
         const title = document.createElement("strong");
         title.textContent = String(properties.title ?? "Published media");
@@ -142,18 +152,21 @@ export function InventoryMap() {
   }, []);
 
   function focus(item: InventoryItem) {
+    setSelectedId(item.id);
+    if (window.matchMedia("(max-width: 800px)").matches) setMobileView("map");
     mapRef.current?.flyTo({ center: [Number(item.longitude), Number(item.latitude)], zoom: 14, essential: true });
   }
 
   return <div className="map-browser">
-    <aside className="map-sidebar">
+    <div className="map-view-switch" role="group" aria-label="Inventory view"><button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>List</button><button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>Map</button></div>
+    <aside className={`map-sidebar ${mobileView === "map" ? "mobile-view-hidden" : ""}`}>
       <div className="map-filters">
         <label>Media type<select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}><option value="all">All media</option><option value="led">LED screens</option><option value="theatre">Theatre slots</option><option value="mobile">Mobile media</option></select></label>
         <label>District<select value={district} onChange={(event) => setDistrict(event.target.value)}><option value="all">All districts</option>{districts.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       <p className="map-status" role="status">{message}</p>
-      <div className="map-results">{visible.map((item) => <button key={item.id} type="button" onClick={() => focus(item)}><span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button>)}{!visible.length ? <div className="map-empty">No published listings match these filters.</div> : null}</div>
+      <div className="map-results">{visible.map((item) => <button key={item.id} type="button" aria-pressed={selectedId === item.id} className={selectedId === item.id ? "selected" : ""} onClick={() => focus(item)}><span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button>)}{!visible.length && !loading ? <div className="map-empty">{loadFailed ? "Listings could not be loaded. Try again later." : "No published listings match these filters."}</div> : null}</div>
     </aside>
-    <div className="inventory-map" ref={containerRef} role="region" aria-label="Map of published advertising inventory across Kerala" />
+    <div className={`inventory-map ${mobileView === "list" ? "mobile-view-hidden" : ""}`} ref={containerRef} role="region" aria-label="Map of published advertising inventory across Kerala" />
   </div>;
 }
