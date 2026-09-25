@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getFeaturedInventory, type PublishedListing } from "@/lib/discovery/data";
+import { localDemoEnabled } from "@/lib/discovery/demo";
 import { formatInr } from "@/lib/discovery/domain";
 import { keralaDistricts } from "@/lib/inventory/domain";
 
@@ -12,6 +14,7 @@ const categories = [
 export default async function Home() {
   let featured: PublishedListing[] = [];
   try { featured = await getFeaturedInventory(); } catch { /* Public landing page stays useful if inventory is unavailable. */ }
+  const featuredAreDemo = featured.length > 0 && featured.every((listing) => listing.is_demo);
   return (
     <main>
       <section className="hero">
@@ -55,8 +58,9 @@ export default async function Home() {
       </section>
 
       <section className="section featured-section" aria-labelledby="featured-heading">
-        <div className="section-heading"><div><span className="eyebrow">Published inventory</span><h2 id="featured-heading">Featured Kerala media</h2></div><p>Admin-approved service terms and fixed published rates. Quotes do not reserve inventory.</p></div>
-        {featured.length ? <div className="featured-grid">{featured.map((listing) => <article className="featured-card" key={listing.id}><span className={`format-mark format-${listing.category}`}>{listing.category === "led" ? "LED" : listing.category === "theatre" ? "THE" : "MOB"}</span><div><span className="inventory-kicker">{listing.locality}, {listing.district}</span><h3>{listing.title}</h3><p>{formatInr(listing.amount_paise)} / {listing.rate_unit.replaceAll("_", " ")}</p></div><Link className="button button-secondary button-small" href={`/media/${listing.id}`}>View media</Link></article>)}</div> : <div className="featured-empty"><p>Published placements will appear here as they are approved.</p><Link className="button button-secondary button-small" href="/discover">Browse discovery</Link></div>}
+        <div className="section-heading"><div><span className="eyebrow">{featuredAreDemo ? "Local preview" : "Published inventory"}</span><h2 id="featured-heading">{featuredAreDemo ? "Sample Kerala media" : "Featured Kerala media"}</h2></div><p>{featuredAreDemo ? "Illustrative placements and prices for interface review. Demo listings cannot be booked." : "Admin-approved service terms and fixed published rates. Quotes do not reserve inventory."}</p></div>
+        {localDemoEnabled() ? <div className="demo-callout"><div><b>Local preview data</b><p>Explore three illustrative placements without adding records to Supabase. Demo quotes are disabled.</p></div><div><Link className="button button-secondary button-small" href="/discover?demo=1">Browse demos</Link><Link className="button button-secondary button-small" href="/map?demo=1">Demo map</Link></div></div> : null}
+        {featured.length ? <div className="featured-grid">{featured.map((listing) => <article className="featured-card" key={listing.id}>{listing.cover_image_url || listing.cover_asset_id ? <Image className="featured-card-cover" src={listing.cover_image_url ?? `/api/inventory/${listing.id}/media/${listing.cover_asset_id}`} alt={`${listing.title} at ${listing.locality}`} width={700} height={400} unoptimized /> : null}<span className={`format-mark format-${listing.category}`}>{listing.category === "led" ? "LED" : listing.category === "theatre" ? "THE" : "MOB"}</span><div>{listing.is_demo ? <span className="demo-badge">Demo listing</span> : null}<span className="inventory-kicker">{listing.locality}, {listing.district}</span><h3>{listing.title}</h3><p>{formatInr(listing.amount_paise)} / {listing.rate_unit.replaceAll("_", " ")}</p></div><Link className="button button-secondary button-small" href={`/media/${listing.id}${listing.is_demo ? "?demo=1" : ""}`}>View media</Link></article>)}</div> : <div className="featured-empty"><p>Published placements will appear here as they are approved.</p><Link className="button button-secondary button-small" href="/discover">Browse discovery</Link></div>}
       </section>
 
       <section className="section" id="categories">

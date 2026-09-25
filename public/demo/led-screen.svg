@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" role="img" aria-label="Illustrative demo LED screen">
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#bee3f5"/><stop offset="1" stop-color="#f4faf8"/></linearGradient><linearGradient id="screen" x2="1" y2="1"><stop stop-color="#1268e8"/><stop offset="1" stop-color="#13b987"/></linearGradient></defs>
+  <rect width="1200" height="700" fill="url(#sky)"/><circle cx="1000" cy="122" r="74" fill="#fff7cd"/>
+  <path d="M0 445 145 385l127 55 139-110 109 88 127-55 111 80 136-81 122 84 84-45v299H0Z" fill="#bedbd6"/>
+  <path d="M0 512h1200v188H0Z" fill="#aec2c5"/><path d="M0 590h1200" stroke="#f6faf5" stroke-width="8" stroke-dasharray="84 60"/>
+  <rect x="165" y="90" width="705" height="374" rx="22" fill="#19344c"/><rect x="185" y="110" width="665" height="333" rx="11" fill="url(#screen)"/>
+  <path d="M235 350q176-134 332-75t232-62" fill="none" stroke="#b9fff0" stroke-width="15" opacity=".7"/>
+  <text x="255" y="225" fill="white" font-family="Arial,sans-serif" font-size="41" font-weight="bold">YOUR CAMPAIGN HERE</text>
+  <text x="257" y="274" fill="#d3fff2" font-family="Arial,sans-serif" font-size="26">LED SCREEN · SAMPLE PLACEMENT</text>
+  <path d="M286 464h40v126h-40zm424 0h40v126h-40z" fill="#344f59"/>
+  <rect x="24" y="24" width="272" height="51" rx="25" fill="#09223b"/><text x="46" y="58" fill="white" font-family="Arial,sans-serif" font-size="22" font-weight="bold">ILLUSTRATIVE DEMO</text>
+</svg>

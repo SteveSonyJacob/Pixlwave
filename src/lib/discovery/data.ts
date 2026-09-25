@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { demoListings, findDemoListing, localDemoEnabled, searchDemoInventory } from "./demo";
 import type { DiscoveryCategory } from "./domain";
 
 export type PublishedListing = {
@@ -25,41 +26,61 @@ export type PublishedListing = {
   published_at: string;
   amount_paise: number;
   rate_effective_at: string;
+  cover_asset_id?: string;
+  cover_image_url?: string;
+  is_demo?: boolean;
 };
 
-export type DiscoveryFilters = { q?: string; category?: string; district?: string; max?: string; date?: string };
+export type DiscoveryFilters = { q?: string; category?: string; district?: string; max?: string; page?: string; demo?: string };
+export const DISCOVERY_PAGE_SIZE = 12;
+export type DiscoveryResult = { listings: PublishedListing[]; total: number; page: number; pageSize: number };
+export type PublishedMedia = { id: string; original_name: string; detected_mime: string | null; pixel_width: number | null; pixel_height: number | null; url?: string };
+export type PublishedListingDetail = { listing: PublishedListing; blackouts: { starts_on: string; ends_on: string; reason: string }[]; shows: { id: string; starts_at: string; slots_total: number }[]; media: PublishedMedia[] };
 
 const columns = "id,category,title,description,locality,district,latitude,longitude,audience_estimate,audience_attribution,ad_duration_seconds,plays_per_unit,operating_start,operating_end,service_promise,category_details,currency,rate_unit,current_rate_revision_id,published_at,amount_paise,rate_effective_at";
 
-export async function searchPublishedInventory(filters: DiscoveryFilters) {
+export async function searchPublishedInventory(filters: DiscoveryFilters, pageSize = DISCOVERY_PAGE_SIZE): Promise<DiscoveryResult> {
+  if (localDemoEnabled() && filters.demo === "1") return searchDemoInventory(filters, pageSize);
   const supabase = await createServerSupabaseClient();
-  let query = supabase.from("published_inventory").select(columns).order("published_at", { ascending: false }).limit(100);
+  const requestedPage = Number(filters.page);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage < 100000 ? requestedPage : 1;
+  const from = (page - 1) * pageSize;
+  let query = supabase.from("published_inventory").select(columns, { count: "exact" }).order("published_at", { ascending: false }).order("id").range(from, from + pageSize - 1);
   if (["led", "theatre", "mobile"].includes(filters.category ?? "")) query = query.eq("category", filters.category!);
   if (filters.district) query = query.eq("district", filters.district);
   const maxRupees = Number(filters.max);
   if (Number.isFinite(maxRupees) && maxRupees > 0) query = query.lte("amount_paise", Math.floor(maxRupees * 100));
-  const { data, error } = await query;
+  const term = filters.q?.replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().replace(/\s+/g, " ").slice(0, 80);
+  if (term) query = query.or(`title.ilike.*${term}*,locality.ilike.*${term}*,description.ilike.*${term}*`);
+  const { data, count, error } = await query;
+  if (error?.code === "PGRST103" && page > 1) return searchPublishedInventory({ ...filters, page: "1" }, pageSize);
   if (error) throw new Error("Published inventory is temporarily unavailable.");
-  let listings = (data ?? []) as unknown as PublishedListing[];
-  if (filters.q?.trim()) {
-    const term = filters.q.trim().toLocaleLowerCase("en-IN").slice(0, 80);
-    listings = listings.filter((listing) => [listing.title, listing.locality, listing.description].some((value) => value.toLocaleLowerCase("en-IN").includes(term)));
+  if (count && !data?.length && page > 1) return searchPublishedInventory({ ...filters, page: String(Math.ceil(count / pageSize)) }, pageSize);
+  const listings = (data ?? []) as unknown as PublishedListing[];
+  if (listings.length) {
+    const { data: media } = await supabase.from("published_listing_media").select("id,listing_id").in("listing_id", listings.map((listing) => listing.id)).order("created_at");
+    const firstMedia = new Map<string, string>();
+    for (const asset of media ?? []) if (!firstMedia.has(asset.listing_id)) firstMedia.set(asset.listing_id, asset.id);
+    for (const listing of listings) listing.cover_asset_id = firstMedia.get(listing.id);
   }
-  if (filters.date && /^\d{4}-\d{2}-\d{2}$/.test(filters.date) && listings.length) {
-    const ids = listings.map((listing) => listing.id);
-    const { data: blackouts } = await supabase.from("listing_blackouts").select("listing_id").in("listing_id", ids).lte("starts_on", filters.date).gte("ends_on", filters.date);
-    const unavailable = new Set((blackouts ?? []).map((blackout) => blackout.listing_id));
-    listings = listings.filter((listing) => !unavailable.has(listing.id));
-  }
-  return listings;
+  return { listings, total: count ?? 0, page, pageSize };
 }
 
 export async function getFeaturedInventory() {
-  const listings = await searchPublishedInventory({});
-  return listings.slice(0, 3);
+  try {
+    const { listings } = await searchPublishedInventory({}, 3);
+    return listings.length || !localDemoEnabled() ? listings : demoListings.slice(0, 3);
+  } catch (error) {
+    if (localDemoEnabled()) return demoListings.slice(0, 3);
+    throw error;
+  }
 }
 
-export async function getPublishedListing(id: string) {
+export async function getPublishedListing(id: string): Promise<PublishedListingDetail | null> {
+  if (localDemoEnabled()) {
+    const demo = findDemoListing(id);
+    if (demo) return demo;
+  }
   const supabase = await createServerSupabaseClient();
   const [{ data: listing }, { data: blackouts }, { data: shows }, { data: media }] = await Promise.all([
     supabase.from("published_inventory").select(columns).eq("id", id).maybeSingle(),
@@ -72,6 +93,6 @@ export async function getPublishedListing(id: string) {
     listing: listing as unknown as PublishedListing,
     blackouts: blackouts ?? [],
     shows: shows ?? [],
-    media: media ?? []
+    media: (media ?? []) as PublishedMedia[]
   };
 }

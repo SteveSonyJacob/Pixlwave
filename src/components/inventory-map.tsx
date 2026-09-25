@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { KERALA_BOUNDS } from "@/lib/maps/nominatim";
@@ -18,6 +19,7 @@ type InventoryItem = {
   category_details: Record<string, unknown> | null;
   rate_unit: string;
   amount_paise: number;
+  is_demo?: boolean;
 };
 
 const categoryLabels = { led: "LED screens", theatre: "Theatre slots", mobile: "Mobile media" } as const;
@@ -58,14 +60,14 @@ function updateMapData(map: MapLibreMap, items: InventoryItem[]) {
   (map.getSource("inventory-routes") as GeoJSONSource | undefined)?.setData(routes(items));
 }
 
-export function InventoryMap() {
+export function InventoryMap({ demo = false }: { demo?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const visibleRef = useRef<InventoryItem[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [category, setCategory] = useState<"all" | InventoryItem["category"]>("all");
   const [district, setDistrict] = useState("all");
-  const [message, setMessage] = useState("Loading published inventory…");
+  const [message, setMessage] = useState(demo ? "Loading demo inventory…" : "Loading published inventory…");
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
@@ -76,16 +78,26 @@ export function InventoryMap() {
   }, [mobileView]);
 
   useEffect(() => {
-    void fetch("/api/inventory/published")
-      .then(async (response) => {
-        const body = await response.json() as { inventory?: InventoryItem[]; error?: string };
-        if (!response.ok) throw new Error(body.error || "Published inventory is unavailable.");
-        setInventory(body.inventory ?? []);
-        setMessage(`${body.inventory?.length ?? 0} published location(s). Availability is confirmed only after admin approval.`);
-      })
-      .catch(() => { setLoadFailed(true); setMessage("Published inventory is temporarily unavailable."); })
-      .finally(() => setLoading(false));
-  }, []);
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const all: InventoryItem[] = [];
+        let page = 1;
+        while (true) {
+          const response = await fetch(`/api/inventory/published?page=${page}${demo ? "&demo=1" : ""}`, { signal: controller.signal });
+          const body = await response.json() as { inventory?: InventoryItem[]; hasMore?: boolean; error?: string };
+          if (!response.ok) throw new Error(body.error || "Published inventory is unavailable.");
+          all.push(...(body.inventory ?? []));
+          setInventory([...all]);
+          setMessage(demo ? `${all.length} illustrative demo location(s). Quotes and bookings are disabled.` : `${all.length} published location(s). Availability is confirmed only after admin approval.`);
+          if (!body.hasMore) break;
+          page += 1;
+        }
+      } catch { if (!controller.signal.aborted) { setLoadFailed(true); setMessage("Published inventory is temporarily unavailable."); } }
+      finally { if (!controller.signal.aborted) setLoading(false); }
+    })();
+    return () => controller.abort();
+  }, [demo]);
 
   const districts = useMemo(() => [...new Set(inventory.map((item) => item.district))].sort(), [inventory]);
   const visible = useMemo(() => inventory.filter((item) => (category === "all" || item.category === category) && (district === "all" || item.district === district)), [inventory, category, district]);
@@ -132,10 +144,14 @@ export function InventoryMap() {
         setSelectedId(String(properties.id ?? ""));
         const content = document.createElement("div");
         const title = document.createElement("strong");
-        title.textContent = String(properties.title ?? "Published media");
+        title.textContent = String(properties.title ?? "Media listing");
         const details = document.createElement("p");
         details.textContent = `${properties.locality}, ${properties.district} · ${properties.rate}`;
-        content.append(title, details);
+        const link = document.createElement("a");
+        link.href = `/media/${encodeURIComponent(String(properties.id ?? ""))}${String(properties.id ?? "").startsWith("demo-") ? "?demo=1" : ""}`;
+        link.textContent = "View details →";
+        link.className = "map-popup-link";
+        content.append(title, details, link);
         new Popup({ offset: 14 }).setLngLat(feature.geometry.coordinates as [number, number]).setDOMContent(content).addTo(map);
       });
       for (const layer of ["inventory-clusters", "inventory-locations"]) {
@@ -165,8 +181,8 @@ export function InventoryMap() {
         <label>District<select value={district} onChange={(event) => setDistrict(event.target.value)}><option value="all">All districts</option>{districts.map((item) => <option key={item}>{item}</option>)}</select></label>
       </div>
       <p className="map-status" role="status">{message}</p>
-      <div className="map-results">{visible.map((item) => <button key={item.id} type="button" aria-pressed={selectedId === item.id} className={selectedId === item.id ? "selected" : ""} onClick={() => focus(item)}><span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button>)}{!visible.length && !loading ? <div className="map-empty">{loadFailed ? "Listings could not be loaded. Try again later." : "No published listings match these filters."}</div> : null}</div>
+      <div className="map-results">{visible.map((item) => <div className={`map-result ${selectedId === item.id ? "selected" : ""}`} key={item.id}><button type="button" aria-pressed={selectedId === item.id} onClick={() => focus(item)}>{item.is_demo ? <span className="demo-badge">Demo listing</span> : null}<span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button><Link href={`/media/${item.id}${item.is_demo ? "?demo=1" : ""}`}>View details →</Link></div>)}{!visible.length && !loading ? <div className="map-empty">{loadFailed ? "Listings could not be loaded. Try again later." : "No published listings match these filters."}</div> : null}</div>
     </aside>
-    <div className={`inventory-map ${mobileView === "list" ? "mobile-view-hidden" : ""}`} ref={containerRef} role="region" aria-label="Map of published advertising inventory across Kerala" />
+    <div className={`inventory-map ${mobileView === "list" ? "mobile-view-hidden" : ""}`} ref={containerRef} role="region" aria-label={`Map of ${demo ? "sample" : "published"} advertising inventory across Kerala`} />
   </div>;
 }
