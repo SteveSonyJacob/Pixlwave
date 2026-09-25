@@ -285,6 +285,80 @@ async function assertPhase4BookingWorkflow(
   if (lateCapture.rows[0]?.status !== "payment_ineligible" || lateCapture.rows[0]?.reason !== "payment_ineligible" || !lateCapture.rows[0]?.full_refund) throw new Error("An ineligible late capture was not preserved as paid money with a full manual refund obligation.");
 }
 
+async function assertPhase5PaymentWorkflow(pool: Pool, users: { ownerId: string; unverifiedId: string; adminId: string; listingId: string }) {
+  const quote = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, JSON.stringify([{ date: "2099-02-11" }])]);
+  const line = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [quote.rows[0].id, "50000000-0000-0000-0000-000000000001"]);
+  const cartId = line.rows[0].cart_id;
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_booking_cart($1)", [cartId]);
+  const claim = await asService(pool, "select public.claim_cart_payment_order($1) as claim", [cartId]);
+  const order = claim.rows[0].claim.order;
+  if (!claim.rows[0].claim.created || Number(order.amount_paise) !== Number(line.rows[0].paid_amount_paise)) throw new Error("Payment order was not server priced from the frozen cart.");
+  let directClaimBlocked = false;
+  try { await asAuthenticated(pool, users.ownerId, "aal1", "select public.claim_cart_payment_order($1)", [cartId]); } catch { directClaimBlocked = true; }
+  if (!directClaimBlocked) throw new Error("Advertiser directly claimed a privileged gateway order.");
+  const repeatedClaim = await asService(pool, "select public.claim_cart_payment_order($1) as claim", [cartId]);
+  if (repeatedClaim.rows[0].claim.created) throw new Error("Repeated checkout created another order claim.");
+  await asService(pool, "select public.attach_cart_payment_order($1,$2,$3,'INR',$4)", [cartId, "order_P05Sandbox001", order.amount_paise, order.receipt]);
+  await asService(pool, "select public.note_missing_capture_webhook($1,$2,$3,'INR')", ["order_P05Sandbox001", "pay_P05Sandbox001", order.amount_paise]);
+  const beforeWebhook = await pool.query("select status from public.payment_reconciliation_alerts where provider_payment_id='pay_P05Sandbox001'");
+  if (beforeWebhook.rows[0]?.status !== "missing_webhook") throw new Error("A captured provider payment without its event was not flagged for reconciliation.");
+  const capturedAt = new Date().toISOString();
+  await asService(pool, "select public.record_razorpay_failure($1,$2,$3,$4)", ["evt_P05Failed0001", "pay_P05Failed0001", "order_P05Sandbox001", capturedAt]);
+  const afterFailure = await pool.query("select o.state,c.status as cart_status,c.total_amount_paise,l.status as line_status,l.paid_amount_paise from public.payment_orders o join public.booking_carts c on c.id=o.cart_id join public.booking_lines l on l.cart_id=c.id where o.cart_id=$1", [cartId]);
+  if (afterFailure.rows.length !== 1 || afterFailure.rows[0].state !== "ready" || afterFailure.rows[0].cart_status !== "submitted" ||
+      afterFailure.rows[0].line_status !== "draft" || Number(afterFailure.rows[0].total_amount_paise) !== Number(afterFailure.rows[0].paid_amount_paise)) {
+    throw new Error("Failed payment changed the cart, its items, its total or normal checkout.");
+  }
+  const afterFailureClaim = await asService(pool, "select public.claim_cart_payment_order($1) as claim", [cartId]);
+  if (afterFailureClaim.rows[0].claim.created || afterFailureClaim.rows[0].claim.order.provider_order_id !== "order_P05Sandbox001") throw new Error("Normal checkout after failure did not use the original cart and Razorpay order.");
+  const captured = await asService(pool, "select public.record_razorpay_capture($1,$2,$3,$4,'INR',$5,$6,$7) as outcome", ["evt_P05Capture001", "pay_P05Sandbox001", "order_P05Sandbox001", order.amount_paise, capturedAt, 5000, 900]);
+  if (captured.rows[0].outcome !== "allocated") throw new Error("Verified capture was not allocated to P04.");
+  const afterWebhook = await pool.query("select status from public.payment_reconciliation_alerts where provider_payment_id='pay_P05Sandbox001'");
+  if (afterWebhook.rows[0]?.status !== "event_received") throw new Error("Original signed event did not resolve the missing-webhook alert.");
+  const money = await pool.query("select sum(amount_paise) as allocated from public.payment_line_allocations where provider_payment_id='pay_P05Sandbox001'");
+  if (Number(money.rows[0].allocated) !== Number(order.amount_paise)) throw new Error("Captured cart total was not allocated exactly to booking lines.");
+  const unrelatedPayment = await asAuthenticated(pool, users.unverifiedId, "aal1", "select provider_payment_id from public.payment_captures where cart_id=$1", [cartId]);
+  if (unrelatedPayment.rows.length) throw new Error("Another account could read the captured payment.");
+  const funded = await pool.query("select l.status,c.decision_due_at=c.paid_at+interval '168 hours' as exact_due,(select count(*) from public.booking_allocations a where a.booking_line_id=l.id) as allocations from public.booking_lines l join public.booking_carts c on c.id=l.cart_id where l.id=$1", [line.rows[0].id]);
+  if (funded.rows[0]?.status !== "paid_pending" || !funded.rows[0]?.exact_due || Number(funded.rows[0]?.allocations) !== 0) throw new Error("Gateway capture funded review incorrectly or reserved capacity.");
+  await asService(pool, "select public.record_razorpay_failure($1,$2,$3,$4)", ["evt_P05FailedLate", "pay_P05Failed0001", "order_P05Sandbox001", capturedAt]);
+  const afterLateFailure = await pool.query("select o.state,c.status as cart_status,l.status as line_status,c.paid_at from public.payment_orders o join public.booking_carts c on c.id=o.cart_id join public.booking_lines l on l.cart_id=c.id where o.cart_id=$1", [cartId]);
+  if (afterLateFailure.rows[0]?.state !== "captured" || afterLateFailure.rows[0]?.cart_status !== "paid_review" ||
+      afterLateFailure.rows[0]?.line_status !== "paid_pending" || !afterLateFailure.rows[0]?.paid_at) {
+    throw new Error("Out-of-order failed event changed the captured cart or booking line.");
+  }
+  const replay = await asService(pool, "select public.record_razorpay_capture($1,$2,$3,$4,'INR',$5,$6,$7) as outcome", ["evt_P05Capture001", "pay_P05Sandbox001", "order_P05Sandbox001", order.amount_paise, capturedAt, 5000, 900]);
+  if (replay.rows[0].outcome !== "duplicate_event") throw new Error("Webhook replay was not idempotent.");
+  const extra = await asService(pool, "select public.record_razorpay_capture($1,$2,$3,$4,'INR',$5,null,null) as outcome", ["evt_P05Capture002", "pay_P05Sandbox002", "order_P05Sandbox001", order.amount_paise, capturedAt]);
+  if (extra.rows[0].outcome !== "exception") throw new Error("Extra captured money was not preserved as a manual exception.");
+  await asAuthenticated(pool, users.adminId, "aal2", "select public.decide_booking_line($1,'rejected','Fixture payment refund review',null)", [line.rows[0].id]);
+  const obligation = await pool.query("select id,refund_amount_paise,processing_charge_paise from public.refund_obligations where booking_line_id=$1", [line.rows[0].id]);
+  if (Number(obligation.rows[0].processing_charge_paise) !== 5000) throw new Error("Known provider fee was not applied when the manual refund task was created.");
+  await asService(pool, "select public.sync_razorpay_fee($1,$2,$3)", ["pay_P05Sandbox001", 5000, 900]);
+  const adjusted = await pool.query("select refund_amount_paise,processing_charge_paise from public.refund_obligations where id=$1", [obligation.rows[0].id]);
+  if (Number(adjusted.rows[0].processing_charge_paise) !== 5000 || Number(adjusted.rows[0].refund_amount_paise) !== Number(order.amount_paise)-5000) throw new Error("Actual gateway fee was not allocated to the rejected item.");
+  let unauthorized = false;
+  try { await asAuthenticated(pool, users.ownerId, "aal1", "select public.record_manual_gateway_refund($1,$2,$3,$4,$5,$6,$7::uuid[],$8)", [cartId, "rfnd_P05Sandbox001", "pay_P05Sandbox001", adjusted.rows[0].refund_amount_paise, capturedAt, "Sandbox provider receipt", [obligation.rows[0].id], users.adminId]); } catch { unauthorized = true; }
+  if (!unauthorized) throw new Error("Advertiser recorded a refund without admin AAL2.");
+  await asService(pool, "select public.record_manual_gateway_refund($1,$2,$3,$4,$5,$6,$7::uuid[],$8)", [cartId, "rfnd_P05Sandbox001", "pay_P05Sandbox001", adjusted.rows[0].refund_amount_paise, capturedAt, "Sandbox provider receipt", [obligation.rows[0].id], users.adminId]);
+  const completion = await pool.query("select r.status,t.amount_paise,a.amount_paise as allocated from public.refund_obligations r join public.manual_refund_allocations a on a.obligation_id=r.id join public.manual_refund_transactions t on t.id=a.transaction_id where r.id=$1", [obligation.rows[0].id]);
+  if (completion.rows[0]?.status !== "refunded" || Number(completion.rows[0]?.amount_paise) !== Number(completion.rows[0]?.allocated)) throw new Error("Manual refund completion did not reconcile to one transaction.");
+  let duplicateRefundBlocked = false;
+  try { await asService(pool, "select public.record_manual_gateway_refund($1,$2,$3,$4,$5,$6,$7::uuid[],$8)", [cartId, "rfnd_P05Sandbox001", "pay_P05Sandbox001", adjusted.rows[0].refund_amount_paise, capturedAt, "Sandbox provider receipt", [obligation.rows[0].id], users.adminId]); } catch { duplicateRefundBlocked = true; }
+  if (!duplicateRefundBlocked) throw new Error("A completed external refund was recorded twice.");
+
+  const lateQuote = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.create_quote_snapshot($1,$2::jsonb)).id", [users.listingId, JSON.stringify([{ date: "2099-02-12" }])]);
+  const lateLine = await asAuthenticated(pool, users.ownerId, "aal1", "select (public.add_quote_to_cart($1,$2,'{}')).*", [lateQuote.rows[0].id, "50000000-0000-0000-0000-000000000001"]);
+  const lateCartId = lateLine.rows[0].cart_id;
+  await asAuthenticated(pool, users.ownerId, "aal1", "select public.submit_booking_cart($1)", [lateCartId]);
+  const lateClaim = await asService(pool, "select public.claim_cart_payment_order($1) as claim", [lateCartId]);
+  await asService(pool, "select public.attach_cart_payment_order($1,$2,$3,'INR',$4)", [lateCartId, "order_P05SandboxLate", lateClaim.rows[0].claim.order.amount_paise, lateClaim.rows[0].claim.order.receipt]);
+  await pool.query("update public.booking_carts set submitted_at=now()-interval '2 hours',checkout_expires_at=now()-interval '1 hour' where id=$1", [lateCartId]);
+  await asService(pool, "select public.record_razorpay_capture($1,$2,$3,$4,'INR',$5,null,null)", ["evt_P05Late0001", "pay_P05SandboxLate", "order_P05SandboxLate", lateClaim.rows[0].claim.order.amount_paise, new Date().toISOString()]);
+  const lateResult = await pool.query("select l.status,r.reason,r.refund_amount_paise=l.paid_amount_paise as full_refund from public.booking_lines l join public.refund_obligations r on r.booking_line_id=l.id where l.id=$1", [lateLine.rows[0].id]);
+  if (lateResult.rows[0]?.status !== "payment_ineligible" || !lateResult.rows[0]?.full_refund) throw new Error("Late captured money entered approvable review rather than manual reconciliation.");
+}
+
 async function main() {
   loadLocalEnvFile();
   const databaseUrl = process.env.DATABASE_URL;
@@ -317,7 +391,8 @@ async function main() {
   await assertPhase3QuoteWorkflow(pool, inventoryWorkflow);
   await assertSupportAttachmentWorkflow(pool, inventoryWorkflow);
   await assertPhase4BookingWorkflow(pool, inventoryWorkflow);
-  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, security-invoker public views, inventory, Phase 3 quotes/support, and Phase 4 booking workflows.");
+  await assertPhase5PaymentWorkflow(pool, inventoryWorkflow);
+  console.log("Migration tests passed: prior-revision upgrade, empty-database replay, security-invoker public views, inventory, Phase 3 quotes/support, Phase 4 booking, and Phase 5 payment/refund workflows.");
   } finally { await pool.end(); }
 }
 
