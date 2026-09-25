@@ -45,7 +45,7 @@ export async function submitCart(form: FormData) {
   if (!idSchema.safeParse(cartId).success) fail("/cart", "Invalid cart.");
   const { error } = await (await createServerSupabaseClient()).rpc("submit_booking_cart", { target_cart: cartId });
   if (error) fail("/cart", error.message);
-  redirect(`/cart?message=${encodeURIComponent("Cart frozen for payment. Phase 5 will connect Razorpay; this phase accepts funding only through the restricted test harness.")}`);
+  redirect(`/cart?message=${encodeURIComponent("Cart frozen for one sandbox payment. Review the full total before opening checkout.")}`);
 }
 
 export async function cancelBookingLine(form: FormData) {
