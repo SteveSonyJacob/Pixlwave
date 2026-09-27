@@ -1,10 +1,10 @@
 # P02 handoff - Inventory management
 
-Plan version: 1.0 draft. Updated: 2026-09-21.
-Status: IN PROGRESS — location/map slice complete
-Implementation revision: current working tree
-Application tests: 3 map tests PASS; lint and production build PASS
-Manual acceptance: NOT REVIEWED
+Plan version: 1.0 draft. Updated: 2026-09-26.
+Status: USER VERIFIED — current inventory/map implementation accepted; downstream database/provider reruns remain tracked
+Implementation revision: `539ba95`
+Application tests: current repository checks pass; phase-specific database/provider reruns remain pending
+Manual acceptance: USER VERIFIED
 
 ## Authority and dependencies
 
@@ -72,9 +72,9 @@ Exit gate: Verified owners can manage inventory and admins can publish it secure
 
 ## Actual implementation record
 
-- Delivered behavior and omitted scope: OpenStreetMap/Nominatim Kerala search, MapLibre click/drag pin placement and provenance storage are implemented. Other P02 work remains outside this slice.
+- Delivered behavior and omitted scope: The user verified the current P02 inventory and map implementation at revision `539ba95`. OpenStreetMap/Nominatim Kerala search, MapLibre click/drag pin placement and provenance storage are implemented. Paid-commitment invariants remain assigned to their P04/P05 reruns.
 - Files/modules changed: map search route, location picker/map, map utilities, inventory domain/configuration, styles and tests.
-- Branch/commit/build revision and environment URL: current working tree; no deployed URL recorded.
+- Branch/commit/build revision and environment URL: reviewed revision `539ba95`; no deployed URL recorded.
 - Accepted decisions, architecture and workstream ownership: D16/C16 changed to OpenStreetMap + MapLibre GL JS.
 - Schemas/migrations, compatibility and recovery commands: `supabase/migrations/202609190001_openstreetmap_provider.sql` converts legacy providers; not applied to a linked environment.
 - API/event contracts, example payloads and permissions: authenticated `GET /api/maps/search?q=...`; existing Supabase map-search rate check retained.
@@ -106,14 +106,14 @@ Record date/time, role, fixture, browser/device, provider mode and report/trace/
 
 ## Manual sign-off and defects
 
-- Reviewer/date/revision: NOT ASSIGNED / NOT REVIEWED.
-- Integration and regression accepted: NOT REVIEWED.
-- Decision: NOT APPROVED.
-- Feedback and required follow-up: NOT RECORDED.
+- Reviewer/date/revision: USER / 2026-09-26 / `539ba95`.
+- Integration and regression accepted: USER VERIFIED for the reviewed current scope; downstream P04/P05 reruns remain open.
+- Decision: ACCEPTED FOR P03.
+- Feedback and required follow-up: User verified Phase 2; keep database/provider and downstream paid-commitment evidence separate.
 
 | Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
-| No implementation | Phase functionality not delivered | Future developer | Build and validate all workstreams | NOT STARTED |
+| Phase-scope evidence | Database/provider and downstream paid-commitment evidence is not recorded in this handoff | Phase implementer/operator | Run the isolated database/provider procedures and record P04/P05 reruns | OPEN |
 | Configuration/provider checks | See entry gates | Assigned implementer/operator | Record real setup and verification | NOT VERIFIED |
 | Integration evidence | Previous/current behavior not demonstrated | Phase implementer | Execute current tests and affected regression | NOT RUN |
 
@@ -127,15 +127,15 @@ Required outputs: Approved listing/media schemas and APIs, all-category sample r
 
 Before handoff:
 
-- [ ] Document delivered scope and exact revision.
+- [x] Document delivered scope and exact revision.
 - [ ] Pass current cases, added integration case and affected earlier regression.
-- [ ] Record real manual/client acceptance and unresolved defects.
+- [x] Record real manual/client acceptance and unresolved defects.
 - [ ] Update schemas/contracts, decision register, setup and recovery instructions.
 - [ ] Provide concrete next actions and verify the next phase can use these artifacts.
 
 ## Change history
-
 | Date | Revision | Change |
 | --- | --- | --- |
+| 2026-09-26 | `539ba95` | User verified the current inventory and map implementation; downstream database/provider and paid-commitment reruns remain separately tracked. |
 | 2026-09-15 | 0.8 | Created this current phase through seven-phase consolidation. Previous tests mapped without loss; one integration case added. No implementation or tests executed. |
 | 2026-09-15 | 0.9 | Labeled paid/approved commitment checks as inventory-domain fixtures and assigned integrated reruns to P04 and P05. |

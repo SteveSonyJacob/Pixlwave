@@ -1,8 +1,8 @@
 # P01 handoff - Foundation and accounts
 
-Plan version: 1.0 implementation. Updated: 2026-09-18.
+Plan version: 1.0 implementation. Updated: 2026-09-26.
 Status: COMPLETED - IMPLEMENTATION BUILT AND ACCEPTED
-Implementation revision: uncommitted working tree based on `80741d1`
+Implementation revision: `539ba95`
 Application tests: ALL AUTOMATED CI AND ACCEPTANCE CHECKS PASS
 Manual acceptance: ACCEPTED
 
@@ -87,7 +87,7 @@ Exit gate: Foundation and auth work together, scope/interface contracts are docu
 
 - Delivered behavior: responsive public/account shell; email/password/recovery actions; advertiser/owner mode switching; separately provisioned admin; TOTP AAL2 gate; profile RLS; config health; provider boundaries; durable outbox/retry worker; redacted logs; fixtures; CI and contract tests. Phone OTP/linking remains implemented but is hidden and server-blocked while `AUTH_SMS_PROVIDER=deferred`; the client deferred its acceptance pending a possible OAuth decision on 2026-09-16. Later-phase inventory/booking/payment/refund/fulfillment mutation endpoints are intentionally absent.
 - Files/modules changed: application under `src/`, two migrations and local config under `supabase/`, scripts under `scripts/`, CI workflow, pinned package/config files, P01 architecture and operations documents.
-- Branch/commit/build revision and environment URL: uncommitted working tree based on `80741d1`; local production server smoke at `http://localhost:3000`; no deployment URL.
+- Branch/commit/build revision and environment URL: reviewed release candidate `539ba95`; local production server smoke at `http://localhost:3000`; no deployment URL.
 - Accepted decisions, architecture and workstream ownership: `docs/architecture/P01-contracts.md`; D01-D17/C01-C17 unchanged.
 - Schemas/migrations: `202609150001_foundation_accounts.sql` and `202609150002_outbox_audit.sql`. Compatibility test covers the first-migration prior revision followed by upgrade. Recovery is in `docs/operations/P01-foundation.md`.
 - API/event contracts and permissions: health route, Supabase Auth, `select_account_mode`, `is_admin_aal2`, immutable outbox envelope and permission matrix documented in the P01 contracts.
@@ -123,7 +123,7 @@ Record date/time, role, fixture, browser/device, provider mode and report/trace/
 
 ## Manual sign-off and defects
 
-- Reviewer/date/revision: USER / 2026-09-18 / working tree.
+- Reviewer/date/revision: USER / 2026-09-26 / `539ba95`.
 - Integration and regression accepted: ACCEPTED.
 - Decision: APPROVED.
 - Feedback and required follow-up: Phase 1 foundation and accounts accepted. Ready to proceed to Phase 2 (Inventory management).
@@ -153,9 +153,9 @@ Before handoff:
 - [x] Provide concrete next actions and verify the next phase can use these artifacts.
 
 ## Change history
-
 | Date | Revision | Change |
 | --- | --- | --- |
+| 2026-09-26 | `539ba95` | User reverified the accepted foundation and account workflows on the current integrated release candidate. |
 | 2026-09-15 | 0.8 | Created this current phase through seven-phase consolidation. Previous tests mapped without loss; one integration case added. No implementation or tests executed. |
 | 2026-09-15 | 0.9 | Changed downstream booking/deadline/non-delivery work to specification and validation; implementation remains in P04-P06. |
 | 2026-09-16 | 1.0 implementation draft | Built P01 application/accounts, RLS/migrations, worker/outbox, adapters, CI, contracts and runbooks. Recorded local passes and kept real database/provider/manual gates open. No business policy changed. |

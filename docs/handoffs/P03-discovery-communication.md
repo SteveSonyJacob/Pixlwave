@@ -1,10 +1,10 @@
 # P03 handoff - Discovery and communication
 
-Plan version: 1.0 draft. Updated: 2026-09-21.
-Status: IN PROGRESS — implementation hardened; disposable-database, provider and manual acceptance pending
-Implementation revision: current working tree
-Application tests: 14 files / 40 tests PASS; lint, typecheck, documentation contracts, client-secret scan and production build PASS
-Manual acceptance: NOT REVIEWED
+Plan version: 1.0 draft. Updated: 2026-09-26.
+Status: USER VERIFIED — current discovery/communication implementation accepted; provider and database evidence remains tracked separately
+Implementation revision: `539ba95`
+Application tests: current repository checks pass; provider/database and downstream reruns remain pending
+Manual acceptance: USER VERIFIED
 
 ## Authority and dependencies
 
@@ -80,9 +80,9 @@ Exit gate: Discovery and communication integrate with existing accounts/inventor
 
 ## Actual implementation record
 
-- Delivered behavior and omitted scope: `/map` displays published inventory with district/category filters, clustered markers, rate popups and mobile GeoJSON routes. `/discover`, `/media/:id` and `/quotes/:id` use published inventory and immutable 30-minute quote snapshots. Support tickets, private attachments, internal notes, in-app/email delivery records, Resend delivery/webhook handling and durable attachment-retention cleanup are implemented. Real provider delivery, disposable-database replay and manual accessibility/device acceptance remain unverified.
+- Delivered behavior and omitted scope: The user verified the current P03 discovery and communication implementation at revision `539ba95`. `/map` displays published inventory with district/category filters, clustered markers, rate popups and mobile GeoJSON routes. `/discover`, `/media/:id` and `/quotes/:id` use published inventory and immutable 30-minute quote snapshots. Support tickets, private attachments, internal notes, in-app/email delivery records, Resend delivery/webhook handling and durable attachment-retention cleanup are implemented. Provider delivery, disposable-database replay and any separately required accessibility/device evidence remain tracked as independent evidence.
 - Files/modules changed: public discovery/map/detail/quote pages, published-inventory consumers, quote/support/notification migrations and domains, support UI/routes, Resend delivery/webhook worker, retention cleanup worker, navigation and responsive styles.
-- Branch/commit/build revision and environment URL: current working tree; no deployed URL recorded.
+- Branch/commit/build revision and environment URL: reviewed revision `539ba95`; no deployed URL recorded.
 - Accepted decisions, architecture and workstream ownership: D16/C16 changed to OpenStreetMap + MapLibre GL JS.
 - Schemas/migrations, compatibility and recovery commands: Phase 3 migrations and forward-only quote/retention hardening migration exist locally and are not applied to a linked environment. The configured database failed the destructive-test name guard because it is not named with `pixlwave_test`; no database was altered.
 - API/event contracts, example payloads and permissions: public `GET /api/inventory/published` supplies map records; authenticated geocoding remains separate.
@@ -118,10 +118,10 @@ Record date/time, role, fixture, browser/device, provider mode and report/trace/
 
 ## Manual sign-off and defects
 
-- Reviewer/date/revision: NOT ASSIGNED / NOT REVIEWED.
-- Integration and regression accepted: NOT REVIEWED.
-- Decision: NOT APPROVED.
-- Feedback and required follow-up: NOT RECORDED.
+- Reviewer/date/revision: USER / 2026-09-26 / `539ba95`.
+- Integration and regression accepted: USER VERIFIED for the reviewed current scope; provider/database and downstream event reruns remain open.
+- Decision: ACCEPTED FOR P04.
+- Feedback and required follow-up: User verified Phase 3; retain separate evidence for real provider delivery and downstream payment/refund event producers.
 
 | Item | Impact | Owner | Required action | Status |
 | --- | --- | --- | --- | --- |
@@ -139,15 +139,15 @@ Required outputs: Public browsing/map routes, listing-read contracts, quote cons
 
 Before handoff:
 
-- [ ] Document delivered scope and exact revision.
+- [x] Document delivered scope and exact revision.
 - [ ] Pass current cases, added integration case and affected earlier regression.
-- [ ] Record real manual/client acceptance and unresolved defects.
+- [x] Record real manual/client acceptance and unresolved defects.
 - [ ] Update schemas/contracts, decision register, setup and recovery instructions.
 - [ ] Provide concrete next actions and verify the next phase can use these artifacts.
 
 ## Change history
-
 | Date | Revision | Change |
 | --- | --- | --- |
+| 2026-09-26 | `539ba95` | User verified the current discovery and communication implementation; provider/database and downstream event reruns remain separately tracked. |
 | 2026-09-15 | 0.8 | Created this current phase through seven-phase consolidation. Previous tests mapped without loss; one integration case added. No implementation or tests executed. |
 | 2026-09-15 | 0.9 | Clarified pre-payment quote ownership and labeled paid-line/domain-event tests as fixtures requiring P04-P06 reruns. |
