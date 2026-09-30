@@ -62,7 +62,18 @@ Owner supplies the initial base price in P02. Admin controls publication and all
 
 ## Separate state model
 
-Payment, review, capacity, fulfillment, refund and settlement are orthogonal fields, defined in `src/lib/domain/states.ts`. Examples:
+Payment, review, capacity, fulfillment, refund and settlement are orthogonal fields. The planned state vocabulary is recorded here; current migrations and domain code define the implemented subset.
+
+| Field | Planned values |
+| --- | --- |
+| Payment | `unpaid`, `processing`, `succeeded`, `failed` |
+| Review | `paid_awaiting_admin`, `accepted`, `rejected`, `cancelled` |
+| Capacity | `unreserved`, `approved_reserved`, `released` |
+| Fulfillment | `scheduled`, `in_service_window`, `owner_reported_complete`, `admin_verified`, `partially_delivered`, `non_delivery_under_review` |
+| Refund | `pending_admin`, `in_progress`, `refunded`, `failed` |
+| Settlement | `ineligible`, `eligible_for_admin_review`, `verified`, `transfer_in_progress`, `settled`, `failed` |
+
+Examples:
 
 - A successfully paid, undecided line is `payment=succeeded`, `review=paid_awaiting_admin`, `capacity=unreserved`, `refund=null`, `settlement=ineligible`.
 - A rejected line remains `review=rejected` while `refund=pending_admin`; creating the task does not move money.

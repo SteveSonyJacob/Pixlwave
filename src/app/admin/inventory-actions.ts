@@ -30,6 +30,18 @@ export async function reviewListing(form: FormData) {
   go("message",`Listing ${decision}.`);
 }
 
+export async function reviewListingRevision(form: FormData) {
+  await requireAdminMfa();
+  const decision = text(form, "decision");
+  if (!["approved", "rejected"].includes(decision)) go("error", "Invalid revision decision.");
+  const { error } = await (await createServerSupabaseClient()).rpc("review_inventory_listing_revision", {
+    target_revision: uuid(form, "revisionId"), decision, reason: text(form, "reason") || null
+  });
+  if (error) go("error", error.message);
+  revalidatePath("/admin"); revalidatePath("/owner"); revalidatePath("/discover"); revalidatePath("/map");
+  go("message", `Replacement revision ${decision}.`);
+}
+
 export async function changeRate(form: FormData) {
   await requireAdminMfa();
   const amount = Math.round(Number(text(form,"rateRupees")) * 100);

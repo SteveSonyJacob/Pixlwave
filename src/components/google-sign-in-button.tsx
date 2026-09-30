@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 
-export function GoogleSignInButton() {
+export function GoogleSignInButton({ next = "/account" }: { next?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -11,7 +11,8 @@ export function GoogleSignInButton() {
     setError(null);
     setPending(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/account`;
+      const destination = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/account";
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
       const { error: oauthError } = await createBrowserSupabaseClient().auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo }

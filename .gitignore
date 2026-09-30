@@ -4,7 +4,8 @@ node_modules/
 out/
 coverage/
 *.tsbuildinfo
-*.tsbuildinfo
+public/maplibre/
+venv/
 
 # local configuration and Supabase state
 .env

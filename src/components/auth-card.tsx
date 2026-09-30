@@ -1,11 +1,11 @@
 import { Brand } from "@/components/brand";
 
-export function AuthCard({ eyebrow, title, copy, children }: { eyebrow: string; title: string; copy: string; children: React.ReactNode }) {
+export function AuthCard({ eyebrow, title, copy, children, showBrand = true, showEyebrow = true }: { eyebrow: string; title: string; copy: string; children: React.ReactNode; showBrand?: boolean; showEyebrow?: boolean }) {
   return (
     <main className="auth-page">
       <section className="auth-panel">
-        <Brand />
-        <p className="eyebrow">{eyebrow}</p>
+        {showBrand ? <Brand /> : null}
+        {showEyebrow ? <p className="eyebrow auth-eyebrow">{eyebrow}</p> : null}
         <h1>{title}</h1>
         <p className="muted">{copy}</p>
         {children}

@@ -1,9 +1,9 @@
 # Seven-phase migration and validation coverage
 
-Version: 0.9 draft. Updated: 2026-09-15.
-Current authority: [plan.md](../plan.md) and [seven active handoffs](../handoff.md).
+Version: 0.9 historical mapping. Created: 2026-09-15.
+Current authority and implementation status: [plan.md](../plan.md) and [seven active handoffs](../handoff.md).
 
-This is a documentation restructuring only. Exactly seven current phases replace the earlier P00-P11 breakdown. No application code/data needs migration because implementation has not started. All 59 previous validation scenarios are retained, reassigned and given unique current IDs. Wording is clarified where a scenario depends on a later phase, with its original wording preserved in the archive. Seven integration cases are added, for 66 planned cases. None has run.
+This document records the 15 September 2026 documentation restructuring, when implementation had not yet started. Exactly seven current phases replaced the earlier P00-P11 breakdown. All 59 previous validation scenarios were retained, reassigned and given unique current IDs. Wording was clarified where a scenario depends on a later phase, with its original wording preserved in the archive. Seven integration cases were added, for 66 planned cases. No cases had run at the time of this mapping; use the active handoffs for current results.
 
 ## Workstream migration
 

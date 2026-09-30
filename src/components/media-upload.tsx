@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function MediaUpload({ purpose, inputName, accept, label, listingId, ticketId }: { purpose: "creative" | "verification" | "listing" | "ticket"; inputName: string; accept: string; label: string; listingId?: string; ticketId?: string }) {
+  const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [assetId, setAssetId] = useState("");
   const [status, setStatus] = useState("No file uploaded.");
@@ -24,6 +26,7 @@ export function MediaUpload({ purpose, inputName, accept, label, listingId, tick
       if (!response.ok || !result.asset) throw new Error(result.error ?? "Upload failed.");
       setAssetId(result.asset.id);
       setStatus(`${result.asset.original_name} — signature verified and scan passed.`);
+      router.refresh();
     } catch (error) {
       setAssetId("");
       setStatus(error instanceof Error ? error.message : "Upload failed.");

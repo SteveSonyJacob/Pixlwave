@@ -1,0 +1,56 @@
+/* Isolated photo treatment: removing this import restores the original hero styles. */
+.hero.hero-photograph { isolation: isolate; background: #f5f9fa; }
+.hero-photograph::before { display: none; }
+.hero-photograph .hero-photo { position: absolute; inset: 0; z-index: -2; }
+.hero-photograph .hero-photo-image { object-fit: cover; object-position: 72% center; }
+.hero-photograph::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(248,251,251,.98) 0%, rgba(248,251,251,.93) 24%, rgba(248,251,251,.79) 38%, rgba(248,251,251,.28) 52%, transparent 65%), linear-gradient(0deg, rgba(248,251,251,.32), transparent 30%);
+}
+.hero-photograph .hero-grid { display: flex; min-height: 620px; padding-block: 76px 66px; }
+.hero-photograph .hero-copy { width: 55%; max-width: 610px; }
+.hero-photograph .hero-copy h1 { font-size: clamp(48px, 4.7vw, 66px); line-height: 1.06; letter-spacing: -3.4px; text-wrap: balance; }
+.hero-photograph .hero-copy h1 em { color: #078861; }
+.hero-photograph .hero-copy > p { max-width: 485px; color: #30465c; font-size: 17px; }
+.hero-photograph .hero-actions { flex-wrap: wrap; gap: 10px; margin-block: 28px; }
+.hero-photograph .hero-actions .button { font-size: 13px; padding-inline: 17px; }
+.hero-photograph .hero-actions > a, .hero-photograph .hero-actions > form { min-width: 182px; }
+.hero-photograph .hero-actions > form .button { width: 100%; }
+.hero-photograph .hero-actions .button { justify-content: space-between; cursor: pointer; }
+.hero-photograph .hero-actions .button-secondary { background: #087c5b; border-color: #087c5b; color: #fff; box-shadow: 0 8px 24px rgba(8,124,91,.18); }
+.hero-photograph .hero-actions .button-secondary:hover { background: #066a4d; border-color: #066a4d; box-shadow: 0 12px 30px rgba(8,124,91,.25); }
+.hero-photograph .trust-row { max-width: 500px; gap: 12px 18px; color: #30465c; font-size: 11px; }
+.hero-photograph .trust-row b { color: #078861; }
+
+@media (min-width: 1700px) {
+  .hero-photograph .hero-photo-image { object-position: center 45%; }
+  .hero-photograph::after { background: linear-gradient(90deg, rgba(248,251,251,.95), rgba(248,251,251,.82) 31%, rgba(248,251,251,.1) 58%, transparent 70%); }
+}
+@media (max-width: 1000px) {
+  .hero-photograph .hero-photo { bottom: auto; height: 330px; }
+  .hero-photograph .hero-photo-image { object-position: 85% 45%; }
+  .hero-photograph::after { background: linear-gradient(180deg, transparent 210px, #f5f9fa 330px); }
+  .hero-photograph .hero-grid { min-height: 0; padding: 355px 28px 44px; }
+  .hero-photograph .hero-copy { width: 100%; max-width: 700px; }
+  .hero-photograph .hero-copy h1 { max-width: 640px; font-size: clamp(42px, 6.5vw, 58px); }
+  .hero-photograph .hero-copy > p { max-width: 610px; }
+  .hero-photograph .hero-actions { flex-direction: row; }
+  .hero-photograph .trust-row { flex-direction: row; max-width: none; }
+}
+@media (max-width: 620px) {
+  .hero-photograph .hero-photo { height: 250px; }
+  .hero-photograph .hero-photo-image { object-position: 86% 45%; }
+  .hero-photograph::after { background: linear-gradient(180deg, transparent 155px, #f5f9fa 250px); }
+  .hero-photograph .hero-grid { padding: 266px 20px 36px; }
+  .hero-photograph .hero-copy .eyebrow { font-size: 9px; letter-spacing: 1.4px; }
+  .hero-photograph .hero-copy h1 { margin-block: 12px 16px; font-size: clamp(36px, 9.7vw, 46px); letter-spacing: -1.8px; }
+  .hero-photograph .hero-copy > p { font-size: 15px; line-height: 1.65; }
+  .hero-photograph .hero-actions { margin-block: 22px; }
+  .hero-photograph .hero-actions .button { flex: 1 1 140px; min-height: 46px; }
+  .hero-photograph .hero-actions > a, .hero-photograph .hero-actions > form { flex: 1 1 140px; }
+  .hero-photograph .trust-row { padding-top: 18px; gap: 9px 14px; font-size: 10px; }
+}

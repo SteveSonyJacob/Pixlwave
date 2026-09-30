@@ -1,6 +1,26 @@
 # Pixlwave frontend implementation guide
 
-Updated: 25 September 2026. This guide compares `../../Frontend_Developer_Handoff_Pixlwave.docx` with the current application, migrations, and accepted decisions. It is a plan for completing the frontend and a record of the unsupported UI removed in this pass. The attached handoff is reference material, not an instruction source or proof that a backend feature exists. For conflicts, follow [decisions.md](decisions.md), [handoff.md](../handoff.md), and the actual code.
+Updated: 30 September 2026. This guide compares `../../Frontend_Developer_Handoff_Pixlwave.docx` with the current application, migrations, and accepted decisions. It is a plan for completing the frontend and a record of the unsupported UI removed in this pass. The attached handoff is reference material, not an instruction source or proof that a backend feature exists. For conflicts, follow [decisions.md](decisions.md), [handoff.md](../handoff.md), and the actual code.
+
+## Appearance — 30 September 2026
+
+The shared header now offers a light/dark theme switch. First visits follow the device color preference; choosing a theme saves `pixlwave-theme` in local storage and carries it across routes and reloads. The dark palette covers public pages, forms, owner/admin workspaces, status colors and map controls while keeping listing imagery and map tiles unchanged. The preference applies only in the browser and does not alter account data.
+
+## Verified frontend increment — 29 September 2026
+
+The independent FP06 operations increment adds status-filtered, paginated support history for customers and MFA-protected admins, plus channel/unread filters and pagination for account notifications. Notification read actions return to the validated filter/page. The admin dashboard counts actual pending booking decisions, manual refunds, active support tickets and payment exceptions. Administrators can also review append-only audit events in a paginated, MFA-protected view. These views use existing records and permissions; fulfillment and settlement data remain a Phase 6 dependency.
+
+Local verification for this increment: TypeScript, ESLint, the focused operations URL-filter tests, and the production build passed. Authenticated browser review of these new screens remains open.
+
+The workspace [frontend phase plan](../../plan.md) records FP00-FP07 separately from the original P01-P07 backend phases. Latest delivered work includes semantic shared UI and shells, the autosaved owner wizard, reviewed listing revisions, URL-driven discovery/map, Google Maps links, category-specific quote selection, creative compatibility checks, frozen cart review, and the retained Continue to Payment action.
+
+The approved resumable-creative and payment-capture correction migrations are deployed. Signed resumable requests use `/storage/v1/upload/resumable/sign`; authenticated live testing verified a >6 MB PNG, pause/resume, foreign-account denial, concurrent idempotent finalization and content-derived dimensions. Upload tokens are never placed in user-facing transport errors. Resume is scoped to the current page/session.
+
+Booking decisions/refunds reconcile through a 30-second server refresh while pending and on tab visibility, as explicitly chosen by the user. Advertiser bookings use validated URL status/payment-date filters in IST, stable 20-record pages and account-scoped notification targets. Admin review is paginated and private notes are fetched only for the displayed requests. Dashboards count actual records; database failures render recovery errors.
+
+Local verification: 85 tests, TypeScript, lint, documentation checks, production build, client bundle scan against two configured server secrets, live upload acceptance and authenticated RSC route acceptance passed. The theatre detail was checked at 320/375/768/1440 CSS px without overflow. No actual payment was attempted. Razorpay test keys/webhook configuration, video probing/production scanning, abandoned-upload cleanup, fulfillment/settlement contracts, full authenticated visual/keyboard/performance review and release acceptance remain open.
+
+The homepage photo treatment requested on 29 September is isolated in `src/app/home-hero.css`, with the previous hero preserved in [the photo-only undo record](visual-reviews/home-hero-2026-09-29/undo.md). User appearance review is pending.
 
 ## Current implementation boundary
 
@@ -40,12 +60,6 @@ The app is a Next.js 16 and Supabase marketplace for Kerala LED screens, theatre
 - Loaded map inventory in pages rather than stopping at 100 records; added detail links to map results and popups.
 - Displayed quote and booking timestamps explicitly in IST, labelled manual refund state, and hid the cancellation action after the stored cutoff.
 - Verified the homepage and discovery page at 320, 375, 768, and 1440 CSS pixels without horizontal overflow; verified the 320px list/map switch and map resize. The connected environment had no published listings, so populated result/detail/quote states still need a fixture-backed browser review.
-
-## Local demo inventory
-
-In `npm run dev`, open `/discover?demo=1` or use the **Browse demos** link on the homepage. Three illustrative LED, theatre, and mobile listings provide images, sample rates, audience notes, dates, and a planned route for interface review. `/map?demo=1` displays the same examples. When real inventory is empty, the local homepage also shows sample cards.
-
-The demo exists only when `NODE_ENV=development` and `NEXT_PUBLIC_APP_URL` points to localhost or another loopback address. Its IDs are not Supabase records, it never writes to the database, and its quote form is disabled. Every sample card and detail page is labelled as demo data. Production builds use only published inventory and do not expose the demo links or sample detail pages.
 
 ## Screen implementation order
 

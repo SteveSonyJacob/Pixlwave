@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LocationMap } from "@/components/location-map";
 import { inKerala, type MapPlace } from "@/lib/maps/nominatim";
 
 type InitialPlace = Omit<MapPlace, "provider"> & { provider: MapPlace["provider"] | "mappls" | "google" };
 
-export function LocationPicker({ initial }: { initial?: InitialPlace }) {
+export function LocationPicker({ initial, onChange }: { initial?: InitialPlace; onChange?: (place: MapPlace) => void }) {
   const normalizedInitial = initial ? { ...initial, provider: initial.provider === "openstreetmap" ? "openstreetmap" as const : "manual" as const } : undefined;
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<MapPlace[]>([]);
@@ -18,6 +18,10 @@ export function LocationPicker({ initial }: { initial?: InitialPlace }) {
   const [longitude, setLongitude] = useState(normalizedInitial?.longitude ?? Number.NaN);
   const [provider, setProvider] = useState<MapPlace["provider"]>(normalizedInitial?.provider ?? "manual");
   const [placeId, setPlaceId] = useState(normalizedInitial?.placeId || "manual-pin");
+
+  useEffect(() => {
+    onChange?.({ label: locality, locality, district, latitude, longitude, provider, placeId });
+  }, [onChange, locality, district, latitude, longitude, provider, placeId]);
 
   async function search() {
     if (query.trim().length < 3) return setMessage("Enter at least 3 characters.");
@@ -58,7 +62,7 @@ export function LocationPicker({ initial }: { initial?: InitialPlace }) {
 
   return <fieldset className="form-fieldset">
     <legend>Kerala location and pin</legend>
-    <div className="location-search"><input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} placeholder="Search a road, venue or locality" /><button className="button button-secondary button-small" type="button" disabled={busy} onClick={() => void search()}>{busy ? "Searching…" : "Search"}</button></div>
+    <div className="location-search"><input aria-label="Search for a location" value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void search(); } }} placeholder="Search a road, venue or locality" /><button className="button button-secondary button-small" type="button" disabled={busy} onClick={() => void search()}>{busy ? "Searching…" : "Search"}</button></div>
     <small className="muted" role="status">{message}</small>
     {places.length ? <div className="place-results">{places.map((place) => <button type="button" key={`${place.provider}:${place.placeId}`} onClick={() => select(place)}>{place.label}<small>{place.latitude.toFixed(5)}, {place.longitude.toFixed(5)}</small></button>)}</div> : null}
     <LocationMap coordinate={coordinate} onChange={setManualPin} />
@@ -69,8 +73,8 @@ export function LocationPicker({ initial }: { initial?: InitialPlace }) {
       <label>Source<input value={provider === "openstreetmap" ? "OpenStreetMap search" : "Manual verified pin"} readOnly /></label>
     </div>
     <div className="field-row three-fields">
-      <label>Latitude<input name="latitude" type="number" min="8.17" max="12.8" step="0.000001" required value={Number.isFinite(latitude) ? latitude : ""} onChange={(event) => setManualPin({ latitude: Number(event.target.value), longitude })} /></label>
-      <label>Longitude<input name="longitude" type="number" min="74.8" max="77.6" step="0.000001" required value={Number.isFinite(longitude) ? longitude : ""} onChange={(event) => setManualPin({ latitude, longitude: Number(event.target.value) })} /></label>
+      <label>Latitude<input name="latitude" type="number" min="8.17" max="12.8" step="0.000001" required value={Number.isFinite(latitude) ? latitude : ""} onChange={(event) => setManualPin({ latitude: event.target.valueAsNumber, longitude })} /></label>
+      <label>Longitude<input name="longitude" type="number" min="74.8" max="77.6" step="0.000001" required value={Number.isFinite(longitude) ? longitude : ""} onChange={(event) => setManualPin({ latitude, longitude: event.target.valueAsNumber })} /></label>
       <label>Provider place ID<input value={placeId} readOnly /></label>
     </div>
     <input type="hidden" name="sourceProvider" value={provider} />

@@ -18,6 +18,11 @@ const commonListing = z.object({
   longitude: z.coerce.number().min(74.8).max(77.6),
   sourceProvider: z.enum(["openstreetmap", "manual"]),
   sourcePlaceId: z.string().trim().min(2).max(200),
+  pincode: z.string().regex(/^[1-9][0-9]{5}$/),
+  facingDirection: z.string().trim().min(2).max(120),
+  trafficType: z.enum(["high", "medium", "low", "venue"]),
+  visibility: z.enum(["day", "night", "day_night"]),
+  facilities: z.array(z.string().trim().min(2).max(80)).max(20),
   audienceEstimate: z.coerce.number().int().positive().max(100_000_000),
   audienceBasis: z.string().trim().min(10).max(500),
   adDurationSeconds: z.coerce.number().int().min(5).max(120),
@@ -38,6 +43,7 @@ const ledDetails = z.object({
   screenHeightPx: z.coerce.number().int().min(240).max(8_640),
   physicalWidthMetres: z.coerce.number().positive().max(100),
   physicalHeightMetres: z.coerce.number().positive().max(100),
+  pixelPitch: z.string().trim().min(2).max(40),
   dailyCapacity: z.literal(1).default(1)
 });
 
@@ -91,10 +97,11 @@ export function buildPublishedServiceSnapshot(input: {
 }): PublishedServiceSnapshot {
   const { listing } = input;
   const categoryDetails = listing.category === "led"
-    ? { screenWidthPx: listing.screenWidthPx, screenHeightPx: listing.screenHeightPx, dailyCapacity: 1 }
+    ? { screenWidthPx: listing.screenWidthPx, screenHeightPx: listing.screenHeightPx, physicalWidthMetres: listing.physicalWidthMetres, physicalHeightMetres: listing.physicalHeightMetres, pixelPitch: listing.pixelPitch, dailyCapacity: 1 }
     : listing.category === "theatre"
       ? { venueName: listing.venueName, auditoriumName: listing.auditoriumName, slotsPerShow: listing.slotsPerShow }
       : { vehicleLabel: listing.vehicleLabel, rotatingSlots: listing.rotatingSlots, routeName: listing.routeName, routeGeoJson: listing.routeGeoJson, customRouteAllowed: listing.customRouteAllowed };
+  Object.assign(categoryDetails, { pincode: listing.pincode, facingDirection: listing.facingDirection, trafficType: listing.trafficType, visibility: listing.visibility, facilities: listing.facilities });
   return Object.freeze({
     listingId: input.listingId,
     rateRevisionId: input.rateRevisionId,

@@ -6,7 +6,7 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 import { KERALA_BOUNDS } from "@/lib/maps/nominatim";
 import { createOsmRasterStyle, DEFAULT_OSM_TILE_URL } from "@/lib/maps/style";
 
-type Props = { latitude: number; longitude: number; locality: string; route?: unknown; demo?: boolean };
+type Props = { latitude: number; longitude: number; locality: string; route?: unknown };
 
 function publishedRoute(input: unknown): LineString | null {
   try {
@@ -18,7 +18,7 @@ function publishedRoute(input: unknown): LineString | null {
   } catch { return null; }
 }
 
-export function PublishedLocationMap({ latitude, longitude, locality, route, demo = false }: Props) {
+export function PublishedLocationMap({ latitude, longitude, locality, route }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
 
@@ -51,5 +51,5 @@ export function PublishedLocationMap({ latitude, longitude, locality, route, dem
     return () => { cancelled = true; mapRef.current?.remove(); mapRef.current = null; };
   }, [latitude, longitude, route]);
 
-  return <div className="published-location-map" ref={container} role="region" aria-label={`Map showing the ${demo ? "sample" : "published"} location${route ? " and route" : ""} for ${locality}`} />;
+  return <div className="published-location-map" ref={container} role="region" aria-label={`Map showing the published location${route ? " and route" : ""} for ${locality}`} />;
 }

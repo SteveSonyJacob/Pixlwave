@@ -15,10 +15,11 @@ const led = {
   description: "A whole-screen daily placement with audited service promises.",
   locality: "Kochi", district: "Ernakulam" as const, latitude: 9.9816, longitude: 76.2999,
   sourceProvider: "openstreetmap" as const, sourcePlaceId: "osm-123", audienceEstimate: 20_000,
+  pincode: "682016", facingDirection: "North toward MG Road", trafficType: "high" as const, visibility: "day_night" as const, facilities: ["Power backup", "Smart CMS"],
   audienceBasis: "Owner estimate based on a June 2026 manual footfall count.",
   adDurationSeconds: 10, playsPerUnit: 120, operatingStart: "09:00", operatingEnd: "21:00",
   baseRatePaise: 1_200_000, servicePromise: "One exclusive advertiser receives the whole screen for the published day.",
-  screenWidthPx: 1920, screenHeightPx: 1080, physicalWidthMetres: 6, physicalHeightMetres: 3.4, dailyCapacity: 1 as const
+  screenWidthPx: 1920, screenHeightPx: 1080, physicalWidthMetres: 6, physicalHeightMetres: 3.4, pixelPitch: "P6 (6 mm)", dailyCapacity: 1 as const
 };
 
 describe("P02 inventory rules", () => {

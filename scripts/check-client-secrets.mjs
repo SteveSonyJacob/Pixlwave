@@ -1,8 +1,11 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+try { await fs.access(".env.local"); process.loadEnvFile(".env.local"); }
+catch (error) { if (error.code !== "ENOENT") throw error; }
+
 const root = path.join(process.cwd(), ".next", "static");
-const forbiddenValues = [process.env.SUPABASE_SERVICE_ROLE_KEY, process.env.DATABASE_URL]
+const forbiddenValues = [process.env.SUPABASE_SERVICE_ROLE_KEY, process.env.DATABASE_URL, process.env.RAZORPAY_KEY_SECRET, process.env.RAZORPAY_WEBHOOK_SECRET, process.env.RESEND_API_KEY, process.env.RESEND_WEBHOOK_SECRET]
   .filter((value) => value && value.length >= 12);
 
 async function files(directory) {

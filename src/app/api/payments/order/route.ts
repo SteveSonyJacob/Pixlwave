@@ -19,6 +19,11 @@ export async function POST(request: Request) {
   if (!user) return Response.json({ error: "Sign in to pay." }, { status: 401 });
   const { data: cart } = await client.from("booking_carts").select("id,status,advertiser_id,total_amount_paise,checkout_expires_at").eq("id", body.data.cartId).eq("advertiser_id", user.id).maybeSingle();
   if (!cart || cart.status !== "submitted" || new Date(cart.checkout_expires_at).getTime() <= Date.now()) return Response.json({ error: "Checkout expired. Prepare a fresh quote." }, { status: 409 });
+  const { data: lines, error: linesError } = await client.from("booking_lines").select("listing_id").eq("cart_id", cart.id);
+  if (linesError || !lines?.length) return Response.json({ error: "Checkout lines are unavailable." }, { status: 409 });
+  const { data: owned, error: ownerError } = await client.from("inventory_listings").select("id").eq("owner_id", user.id).in("id", lines.map((line) => line.listing_id));
+  if (ownerError) return Response.json({ error: "Checkout ownership could not be verified." }, { status: 409 });
+  if (owned?.length) return Response.json({ error: "Your own screen cannot go through paid checkout. Request self-use dates in your owner workspace." }, { status: 409 });
   const admin = createAdminSupabaseClient();
   const { data: claim, error: claimError } = await admin.rpc("claim_cart_payment_order", { target_cart: cart.id });
   if (claimError || !claim) return Response.json({ error: "Checkout could not be claimed." }, { status: 409 });

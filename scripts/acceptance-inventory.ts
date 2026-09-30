@@ -71,6 +71,21 @@ async function main() {
       const listingId = created.rows[0]?.id as string;
       assert(listingId, `${category}: creation failed`);
       listingIds.push(listingId);
+      const listingMediaId = randomUUID();
+      await client.query(`insert into public.private_media_assets(
+          id,uploader_id,purpose,listing_id,object_key,original_name,declared_mime,detected_mime,
+          byte_size,sha256,pixel_width,pixel_height,scan_status,scan_engine,scan_completed_at,retention_until
+        ) values (
+          $1,$2,'listing_media',$3,$4,$5,'image/png','image/png',100,$6,
+          1920,1080,'clean','acceptance-fixture',now(),now()+interval '1 day'
+        )`, [
+        listingMediaId,
+        ownerId,
+        listingId,
+        `${ownerId}/acceptance/${listingMediaId}.png`,
+        `${category}-acceptance.png`,
+        category.repeat(64).slice(0, 64),
+      ]);
       await asUser(client, ownerId, "aal1", "select public.submit_inventory_listing($1)", [listingId]);
       await asUser(client, adminId, "aal2", "select public.review_inventory_listing($1,'published',null)", [listingId]);
     }

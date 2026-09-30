@@ -1,10 +1,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { listingCategories } from "@/lib/inventory/domain";
-import { demoListings, localDemoEnabled } from "@/lib/discovery/demo";
 
 export async function GET(request: Request) {
   const parameters = new URL(request.url).searchParams;
-  if (localDemoEnabled() && parameters.get("demo") === "1") return Response.json({ inventory: demoListings, hasMore: false, demo: true });
   const category = parameters.get("category");
   const district = parameters.get("district")?.trim();
   const requestedPage = Number(parameters.get("page"));

@@ -1,7 +1,9 @@
 # Pixlwave development handoff guide
 
-Version: 1.0 draft. Updated: 2026-09-21.
-Status: implementation in progress through the Phase 4 booking/admin slice; external-provider and manual acceptance remain open.
+Version: 1.0 draft. Updated: 2026-09-29.
+Status: implementation includes the P05 payment slice and FP00-FP05 frontend work; provider and manual acceptance remain open. FP06-FP07 are in progress.
+
+Latest evidence: [frontend phase progress](../plan.md), [frontend implementation increment](docs/frontend-implementation.md), and [P05 deployment/replay status](docs/handoffs/P05-payments-integration.md). Approved resumable creative and payment-capture correction migrations are deployed. Live resumable upload and authenticated RSC route checks pass. User-requested homepage photography is implemented for review with a [photo-only undo record](docs/visual-reviews/home-hero-2026-09-29/undo.md). Do not treat implementation evidence as final provider/client acceptance.
 
 ## Read before continuing
 
@@ -32,7 +34,7 @@ Status: implementation in progress through the Phase 4 booking/admin slice; exte
 | P02 | [Inventory management](docs/handoffs/P02-inventory-management.md) | IN PROGRESS |
 | P03 | [Discovery and communication](docs/handoffs/P03-discovery-communication.md) | IN PROGRESS |
 | P04 | [Booking and admin workflow](docs/handoffs/P04-booking-admin.md) | IN PROGRESS |
-| P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | NOT STARTED |
+| P05 | [Payments and booking integration](docs/handoffs/P05-payments-integration.md) | IMPLEMENTED; REAL SANDBOX ACCEPTANCE PENDING |
 | P06 | [Fulfillment and settlement](docs/handoffs/P06-fulfillment-settlement.md) | NOT STARTED |
 | P07 | [Production validation and launch](docs/handoffs/P07-production-launch.md) | NOT STARTED |
 

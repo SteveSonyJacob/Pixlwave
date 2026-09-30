@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { KERALA_BOUNDS } from "@/lib/maps/nominatim";
 import { createOsmRasterStyle, DEFAULT_OSM_TILE_URL } from "@/lib/maps/style";
+import { keralaDistricts } from "@/lib/inventory/domain";
+import type { DiscoveryFilters } from "@/lib/discovery/filters";
+import { googleMapsLocationUrl } from "@/lib/maps/google-maps-url";
 
 type InventoryItem = {
   id: string;
@@ -19,7 +23,6 @@ type InventoryItem = {
   category_details: Record<string, unknown> | null;
   rate_unit: string;
   amount_paise: number;
-  is_demo?: boolean;
 };
 
 const categoryLabels = { led: "LED screens", theatre: "Theatre slots", mobile: "Mobile media" } as const;
@@ -60,16 +63,12 @@ function updateMapData(map: MapLibreMap, items: InventoryItem[]) {
   (map.getSource("inventory-routes") as GeoJSONSource | undefined)?.setData(routes(items));
 }
 
-export function InventoryMap({ demo = false }: { demo?: boolean }) {
+export function InventoryMap({ listings, filters, total, truncated, error, listHref }: { listings: InventoryItem[]; filters: DiscoveryFilters; total: number; truncated: boolean; error: string; listHref: string }) {
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const visibleRef = useRef<InventoryItem[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [category, setCategory] = useState<"all" | InventoryItem["category"]>("all");
-  const [district, setDistrict] = useState("all");
-  const [message, setMessage] = useState(demo ? "Loading demo inventory…" : "Loading published inventory…");
-  const [loading, setLoading] = useState(true);
-  const [loadFailed, setLoadFailed] = useState(false);
+  const visibleRef = useRef<InventoryItem[]>(listings);
+  const [mapError, setMapError] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "map">("list");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -78,39 +77,21 @@ export function InventoryMap({ demo = false }: { demo?: boolean }) {
   }, [mobileView]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void (async () => {
-      try {
-        const all: InventoryItem[] = [];
-        let page = 1;
-        while (true) {
-          const response = await fetch(`/api/inventory/published?page=${page}${demo ? "&demo=1" : ""}`, { signal: controller.signal });
-          const body = await response.json() as { inventory?: InventoryItem[]; hasMore?: boolean; error?: string };
-          if (!response.ok) throw new Error(body.error || "Published inventory is unavailable.");
-          all.push(...(body.inventory ?? []));
-          setInventory([...all]);
-          setMessage(demo ? `${all.length} illustrative demo location(s). Quotes and bookings are disabled.` : `${all.length} published location(s). Availability is confirmed only after admin approval.`);
-          if (!body.hasMore) break;
-          page += 1;
-        }
-      } catch { if (!controller.signal.aborted) { setLoadFailed(true); setMessage("Published inventory is temporarily unavailable."); } }
-      finally { if (!controller.signal.aborted) setLoading(false); }
-    })();
-    return () => controller.abort();
-  }, [demo]);
-
-  const districts = useMemo(() => [...new Set(inventory.map((item) => item.district))].sort(), [inventory]);
-  const visible = useMemo(() => inventory.filter((item) => (category === "all" || item.category === category) && (district === "all" || item.district === district)), [inventory, category, district]);
+    visibleRef.current = listings;
+    if (mapRef.current?.isStyleLoaded()) updateMapData(mapRef.current, listings);
+  }, [listings]);
 
   useEffect(() => {
-    visibleRef.current = visible;
-    if (mapRef.current?.isStyleLoaded()) updateMapData(mapRef.current, visible);
-  }, [visible]);
+    if (!filters.bbox || !mapRef.current) return;
+    const [west, south, east, north] = filters.bbox.split(",").map(Number);
+    mapRef.current.fitBounds([[west, south], [east, north]], { padding: 36, duration: 0 });
+  }, [filters.bbox]);
 
   useEffect(() => {
     let cancelled = false;
     void import("maplibre-gl").then(({ Map, NavigationControl, Popup, setWorkerUrl }) => {
       if (cancelled || !containerRef.current) return;
+      try {
       setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
       const map = new Map({
         container: containerRef.current,
@@ -122,6 +103,11 @@ export function InventoryMap({ demo = false }: { demo?: boolean }) {
         cooperativeGestures: true
       });
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+      if (filters.bbox) {
+        const [west, south, east, north] = filters.bbox.split(",").map(Number);
+        map.fitBounds([[west, south], [east, north]], { padding: 36, duration: 0 });
+      }
+      map.on("error", () => setMapError("The map tiles could not load. Use the results list to open a placement."));
       map.on("load", () => {
         map.addSource("inventory-routes", { type: "geojson", data: routes(visibleRef.current) });
         map.addLayer({ id: "inventory-routes", type: "line", source: "inventory-routes", paint: { "line-color": "#ff725e", "line-width": 4, "line-opacity": 0.8 } });
@@ -148,10 +134,20 @@ export function InventoryMap({ demo = false }: { demo?: boolean }) {
         const details = document.createElement("p");
         details.textContent = `${properties.locality}, ${properties.district} · ${properties.rate}`;
         const link = document.createElement("a");
-        link.href = `/media/${encodeURIComponent(String(properties.id ?? ""))}${String(properties.id ?? "").startsWith("demo-") ? "?demo=1" : ""}`;
+        link.href = `/media/${encodeURIComponent(String(properties.id ?? ""))}`;
         link.textContent = "View details →";
         link.className = "map-popup-link";
+        const item = visibleRef.current.find((entry) => entry.id === String(properties.id ?? ""));
+        const googleLink = document.createElement("a");
+        if (item) {
+          googleLink.href = googleMapsLocationUrl(item.latitude, item.longitude);
+          googleLink.textContent = "Open in Google Maps ↗";
+          googleLink.className = "map-popup-link";
+          googleLink.target = "_blank";
+          googleLink.rel = "noopener noreferrer";
+        }
         content.append(title, details, link);
+        if (item) content.append(googleLink);
         new Popup({ offset: 14 }).setLngLat(feature.geometry.coordinates as [number, number]).setDOMContent(content).addTo(map);
       });
       for (const layer of ["inventory-clusters", "inventory-locations"]) {
@@ -159,13 +155,22 @@ export function InventoryMap({ demo = false }: { demo?: boolean }) {
         map.on("mouseleave", layer, () => { map.getCanvas().style.cursor = ""; });
       }
       mapRef.current = map;
-    });
+      } catch { setMapError("This device cannot display the map. The results list remains available."); }
+    }).catch(() => { if (!cancelled) setMapError("The map could not load. The results list remains available."); });
     return () => {
       cancelled = true;
       mapRef.current?.remove();
       mapRef.current = null;
     };
+  // The map itself lives for this component mount; URL filter changes only replace its GeoJSON data.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getLayer("inventory-locations")) return;
+    map.setPaintProperty("inventory-locations", "circle-radius", ["case", ["==", ["get", "id"], selectedId ?? ""], 14, 9]);
+  }, [selectedId]);
 
   function focus(item: InventoryItem) {
     setSelectedId(item.id);
@@ -173,16 +178,29 @@ export function InventoryMap({ demo = false }: { demo?: boolean }) {
     mapRef.current?.flyTo({ center: [Number(item.longitude), Number(item.latitude)], zoom: 14, essential: true });
   }
 
+  function searchThisArea() {
+    const bounds = mapRef.current?.getBounds();
+    if (!bounds) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("bbox", [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()].map((value) => value.toFixed(4)).join(","));
+    params.delete("page");
+    router.push(`/map?${params}`);
+  }
+
   return <div className="map-browser">
     <div className="map-view-switch" role="group" aria-label="Inventory view"><button type="button" aria-pressed={mobileView === "list"} onClick={() => setMobileView("list")}>List</button><button type="button" aria-pressed={mobileView === "map"} onClick={() => setMobileView("map")}>Map</button></div>
     <aside className={`map-sidebar ${mobileView === "map" ? "mobile-view-hidden" : ""}`}>
-      <div className="map-filters">
-        <label>Media type<select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}><option value="all">All media</option><option value="led">LED screens</option><option value="theatre">Theatre slots</option><option value="mobile">Mobile media</option></select></label>
-        <label>District<select value={district} onChange={(event) => setDistrict(event.target.value)}><option value="all">All districts</option>{districts.map((item) => <option key={item}>{item}</option>)}</select></label>
-      </div>
-      <p className="map-status" role="status">{message}</p>
-      <div className="map-results">{visible.map((item) => <div className={`map-result ${selectedId === item.id ? "selected" : ""}`} key={item.id}><button type="button" aria-pressed={selectedId === item.id} onClick={() => focus(item)}>{item.is_demo ? <span className="demo-badge">Demo listing</span> : null}<span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button><Link href={`/media/${item.id}${item.is_demo ? "?demo=1" : ""}`}>View details →</Link></div>)}{!visible.length && !loading ? <div className="map-empty">{loadFailed ? "Listings could not be loaded. Try again later." : "No published listings match these filters."}</div> : null}</div>
+      <form action="/map" key={JSON.stringify(filters)} className="map-filters">
+        {filters.bbox ? <input type="hidden" name="bbox" value={filters.bbox} /> : null}
+        <label>Search<input name="q" defaultValue={filters.q ?? ""} placeholder="Place or screen" /></label>
+        <label>Media type<select name="category" defaultValue={filters.category ?? ""}><option value="">All media</option><option value="led">LED screens</option><option value="theatre">Theatre slots</option><option value="mobile">Mobile media</option></select></label>
+        <label>District<select name="district" defaultValue={filters.district ?? ""}><option value="">All districts</option>{keralaDistricts.map((item) => <option key={item}>{item}</option>)}</select></label>
+        <label>Maximum ₹ / unit<input name="max" type="number" min="100" max="10000000" step="1" defaultValue={filters.max ?? ""} placeholder="Any rate" /></label>
+        <button className="button button-small" type="submit">Apply filters</button>
+      </form>
+      <p className="map-status" role="status">{error || `${listings.length} of ${total} published location(s). ${truncated ? "Narrow the filters to see all locations. " : ""}Payment alone does not reserve capacity.`} <Link href={listHref}>View text results →</Link></p>
+      <div className="map-results">{listings.map((item) => <div className={`map-result ${selectedId === item.id ? "selected" : ""}`} key={item.id}><button type="button" aria-pressed={selectedId === item.id} onClick={() => focus(item)}><span className={`map-category map-category-${item.category}`}>{categoryLabels[item.category]}</span><strong>{item.title}</strong><small>{item.locality}, {item.district}</small><b>{formatRate(item)}</b></button><div className="map-result-links"><Link href={`/media/${item.id}`}>View details →</Link><a href={googleMapsLocationUrl(item.latitude, item.longitude)} target="_blank" rel="noopener noreferrer">Google Maps ↗</a></div></div>)}{!listings.length ? <div className="map-empty">{error || "No published listings match these filters."}</div> : null}</div>
     </aside>
-    <div className={`inventory-map ${mobileView === "list" ? "mobile-view-hidden" : ""}`} ref={containerRef} role="region" aria-label={`Map of ${demo ? "sample" : "published"} advertising inventory across Kerala`} />
+    <div className={`inventory-map-shell ${mobileView === "list" ? "mobile-view-hidden" : ""}`}><div className="inventory-map" ref={containerRef} role="region" aria-label="Map of published advertising inventory across Kerala" />{mapError ? <div className="map-failure" role="alert">{mapError} <Link href={listHref}>View results</Link></div> : <button type="button" className="button button-small map-search-area" onClick={searchThisArea}>Search this area</button>}</div>
   </div>;
 }

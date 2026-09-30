@@ -32,6 +32,8 @@ export async function createQuote(form: FormData) {
   const parsed = quoteRequestSchema.safeParse(input);
   if (!parsed.success) quoteError(listingId, parsed.error.issues[0]?.message ?? "Choose a valid inventory unit.");
   const supabase = await createServerSupabaseClient();
+  const { data: ownedListing } = await supabase.from("inventory_listings").select("id").eq("id", listingId).eq("owner_id", identity.userId).maybeSingle();
+  if (ownedListing) quoteError(listingId, "Your own screen cannot go through paid checkout. Request self-use dates in your owner workspace.");
   const { data, error } = await supabase.rpc("create_quote_snapshot", { target_listing: listingId, units: parsed.data.units });
   if (error || !data) quoteError(listingId, error?.message ?? "Quote could not be created.");
   redirect(`/quotes/${data.id}`);

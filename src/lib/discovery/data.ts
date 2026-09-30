@@ -1,6 +1,6 @@
 import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { demoListings, findDemoListing, localDemoEnabled, searchDemoInventory } from "./demo";
+import { parseDiscoveryFilters, type DiscoveryFilters, type RawDiscoveryFilters } from "./filters";
 import type { DiscoveryCategory } from "./domain";
 
 export type PublishedListing = {
@@ -28,10 +28,9 @@ export type PublishedListing = {
   rate_effective_at: string;
   cover_asset_id?: string;
   cover_image_url?: string;
-  is_demo?: boolean;
 };
 
-export type DiscoveryFilters = { q?: string; category?: string; district?: string; max?: string; page?: string; demo?: string };
+export type { DiscoveryFilters } from "./filters";
 export const DISCOVERY_PAGE_SIZE = 12;
 export type DiscoveryResult = { listings: PublishedListing[]; total: number; page: number; pageSize: number };
 export type PublishedMedia = { id: string; original_name: string; detected_mime: string | null; pixel_width: number | null; pixel_height: number | null; url?: string };
@@ -39,19 +38,25 @@ export type PublishedListingDetail = { listing: PublishedListing; blackouts: { s
 
 const columns = "id,category,title,description,locality,district,latitude,longitude,audience_estimate,audience_attribution,ad_duration_seconds,plays_per_unit,operating_start,operating_end,service_promise,category_details,currency,rate_unit,current_rate_revision_id,published_at,amount_paise,rate_effective_at";
 
-export async function searchPublishedInventory(filters: DiscoveryFilters, pageSize = DISCOVERY_PAGE_SIZE): Promise<DiscoveryResult> {
-  if (localDemoEnabled() && filters.demo === "1") return searchDemoInventory(filters, pageSize);
+function applyDiscoveryFilters<T extends { eq: (column: string, value: string) => T; lte: (column: string, value: number) => T; gte: (column: string, value: number) => T; or: (filters: string) => T }>(query: T, filters: DiscoveryFilters): T {
+  if (filters.category) query = query.eq("category", filters.category);
+  if (filters.district) query = query.eq("district", filters.district);
+  if (filters.max) query = query.lte("amount_paise", Number(filters.max) * 100);
+  if (filters.q) query = query.or(`title.ilike.*${filters.q}*,locality.ilike.*${filters.q}*,description.ilike.*${filters.q}*`);
+  if (filters.bbox) {
+    const [west, south, east, north] = filters.bbox.split(",").map(Number);
+    query = query.gte("longitude", west).lte("longitude", east).gte("latitude", south).lte("latitude", north);
+  }
+  return query;
+}
+
+export async function searchPublishedInventory(rawFilters: RawDiscoveryFilters, pageSize = DISCOVERY_PAGE_SIZE): Promise<DiscoveryResult> {
+  const filters = parseDiscoveryFilters(rawFilters);
   const supabase = await createServerSupabaseClient();
   const requestedPage = Number(filters.page);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage < 100000 ? requestedPage : 1;
   const from = (page - 1) * pageSize;
-  let query = supabase.from("published_inventory").select(columns, { count: "exact" }).order("published_at", { ascending: false }).order("id").range(from, from + pageSize - 1);
-  if (["led", "theatre", "mobile"].includes(filters.category ?? "")) query = query.eq("category", filters.category!);
-  if (filters.district) query = query.eq("district", filters.district);
-  const maxRupees = Number(filters.max);
-  if (Number.isFinite(maxRupees) && maxRupees > 0) query = query.lte("amount_paise", Math.floor(maxRupees * 100));
-  const term = filters.q?.replace(/[^\p{L}\p{N}\s-]/gu, " ").trim().replace(/\s+/g, " ").slice(0, 80);
-  if (term) query = query.or(`title.ilike.*${term}*,locality.ilike.*${term}*,description.ilike.*${term}*`);
+  const query = applyDiscoveryFilters(supabase.from("published_inventory").select(columns, { count: "exact" }).order("published_at", { ascending: false }).order("id").range(from, from + pageSize - 1), filters);
   const { data, count, error } = await query;
   if (error?.code === "PGRST103" && page > 1) return searchPublishedInventory({ ...filters, page: "1" }, pageSize);
   if (error) throw new Error("Published inventory is temporarily unavailable.");
@@ -66,21 +71,21 @@ export async function searchPublishedInventory(filters: DiscoveryFilters, pageSi
   return { listings, total: count ?? 0, page, pageSize };
 }
 
+export async function getMapInventory(rawFilters: RawDiscoveryFilters) {
+  const filters = parseDiscoveryFilters(rawFilters);
+  const supabase = await createServerSupabaseClient();
+  const query = applyDiscoveryFilters(supabase.from("published_inventory").select(columns, { count: "exact" }).order("published_at", { ascending: false }).order("id").limit(500), filters);
+  const { data, count, error } = await query;
+  if (error) throw new Error("Published map inventory is temporarily unavailable.");
+  return { listings: (data ?? []) as unknown as PublishedListing[], total: count ?? 0, truncated: (count ?? 0) > 500 };
+}
+
 export async function getFeaturedInventory() {
-  try {
-    const { listings } = await searchPublishedInventory({}, 3);
-    return listings.length || !localDemoEnabled() ? listings : demoListings.slice(0, 3);
-  } catch (error) {
-    if (localDemoEnabled()) return demoListings.slice(0, 3);
-    throw error;
-  }
+  const { listings } = await searchPublishedInventory({}, 3);
+  return listings;
 }
 
 export async function getPublishedListing(id: string): Promise<PublishedListingDetail | null> {
-  if (localDemoEnabled()) {
-    const demo = findDemoListing(id);
-    if (demo) return demo;
-  }
   const supabase = await createServerSupabaseClient();
   const [{ data: listing }, { data: blackouts }, { data: shows }, { data: media }] = await Promise.all([
     supabase.from("published_inventory").select(columns).eq("id", id).maybeSingle(),

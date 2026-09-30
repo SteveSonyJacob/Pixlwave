@@ -1,0 +1,118 @@
+import Link from "next/link";
+import Form from "next/form";
+import { getFeaturedInventory, type PublishedListing } from "@/lib/discovery/data";
+import { localDemoEnabled } from "@/lib/discovery/demo";
+import { keralaDistricts } from "@/lib/inventory/domain";
+import { ListingCard } from "@/components/listing-card";
+import { Button, LinkButton } from "@/components/ui/button";
+import { TextField, SelectField } from "@/components/ui/field";
+import { EmptyState } from "@/components/ui/feedback";
+import { Icon } from "@/components/ui/icon";
+
+const categories = [
+  { icon: "▦", slug: "led", name: "LED screens", unit: "Whole screen · per day", copy: "High-impact digital placements with operating hours and fixed published day rates." },
+  { icon: "▶", slug: "theatre", name: "Theatre slots", unit: "Specific show · per slot", copy: "Choose visible show instances and approved pre-show duration and play commitments." },
+  { icon: "↝", slug: "mobile", name: "Mobile media", unit: "Vehicle route · rotating slot", copy: "Plan across owner-permitted routes with dated, shared rotating capacity." }
+];
+const popularPlaces = [
+  { name: "Kochi", district: "Ernakulam", caption: "City centre and coastal corridors" },
+  { name: "Thiruvananthapuram", district: "Thiruvananthapuram", caption: "Capital city and business districts" },
+  { name: "Thrissur", district: "Thrissur", caption: "Central Kerala connections" },
+  { name: "Kozhikode", district: "Kozhikode", caption: "North Kerala urban routes" }
+];
+
+export default async function Home() {
+  let featured: PublishedListing[] = [];
+  try { featured = await getFeaturedInventory(); } catch { /* Public landing page stays useful if inventory is unavailable. */ }
+  const featuredAreDemo = featured.length > 0 && featured.every((listing) => listing.is_demo);
+  return (
+    <main>
+      <section className="hero">
+        <div className="hero-grid">
+          <div className="hero-copy">
+            <span className="eyebrow">Kerala&apos;s managed media marketplace</span>
+            <h1>Your campaign,<br /><em>everywhere it matters.</em></h1>
+            <p>Discover LED screens, theatre moments and mobile media across Kerala—priced clearly and coordinated by a real team.</p>
+            <div className="hero-actions">
+              <Link className="button" href="/auth/sign-up">Plan a campaign <span>→</span></Link>
+              <Link className="button button-secondary" href="/map">Explore the map</Link>
+              <a className="button button-secondary" href="#process">See how it works</a>
+            </div>
+            <div className="trust-row">
+              <span><b>₹</b> Fixed published rates</span>
+              <span><b>✓</b> Admin-coordinated</span>
+              <span><b>◷</b> Exact IST deadlines</span>
+            </div>
+          </div>
+          <div className="hero-visual" aria-label="Illustration of a digital advertising screen by the Kerala coast">
+            <div className="sun" />
+            <div className="billboard">
+              <div className="billboard-screen"><small>MAKE A</small><strong>WAVE.</strong><span>Across Kerala</span></div>
+              <i className="post post-one" /><i className="post post-two" />
+            </div>
+            <div className="coast-line" />
+            <div className="hero-note"><span className="status-dot" /><div><b>Published media</b><small>Explore before you request a quote</small></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-search section" aria-labelledby="home-search-heading">
+        <div><span className="eyebrow">Start with a place</span><h2 id="home-search-heading">Find media across Kerala</h2><p>Search published placements by location, format and rate.</p></div>
+        <Form action="/discover" className="home-search-form">
+          <TextField id="home-place" label="Place or media name" name="q" placeholder="City, locality or screen" />
+          <SelectField id="home-format" label="Format" name="category" defaultValue=""><option value="">All formats</option><option value="led">LED screens</option><option value="theatre">Theatre slots</option><option value="mobile">Mobile media</option></SelectField>
+          <SelectField id="home-district" label="District" name="district" defaultValue=""><option value="">All Kerala</option>{keralaDistricts.map((district) => <option key={district} value={district}>{district}</option>)}</SelectField>
+          <TextField id="home-budget" label="Maximum ₹ / unit" name="max" type="number" min="100" step="100" placeholder="Any price" />
+          <Button type="submit"><Icon name="search" size={18} />Search media</Button>
+        </Form>
+      </section>
+
+      <nav className="category-rail section" aria-label="Browse media formats">
+        <Link href="/discover">All media</Link>{categories.map((category) => <Link key={category.slug} href={`/discover?category=${category.slug}`}>{category.icon} {category.name}</Link>)}
+      </nav>
+
+      <section className="section popular-section" aria-labelledby="popular-heading">
+        <div className="section-heading"><div><span className="eyebrow">Start near your audience</span><h2 id="popular-heading">Explore Kerala locations</h2></div><p>Choose a district to see its published placements and compare formats at their actual rate units.</p></div>
+        <div className="popular-grid">{popularPlaces.map((place) => <Link className="popular-place" href={`/discover?district=${encodeURIComponent(place.district)}`} key={place.name}><span className="popular-place-mark">{place.name.slice(0, 2).toUpperCase()}</span><span><strong>{place.name}</strong><small>{place.caption}</small></span><span aria-hidden="true">→</span></Link>)}</div>
+      </section>
+
+      <section className="section featured-section" aria-labelledby="featured-heading">
+        <div className="section-heading"><div><span className="eyebrow">{featuredAreDemo ? "Local preview" : "Published inventory"}</span><h2 id="featured-heading">{featuredAreDemo ? "Sample Kerala media" : "Featured Kerala media"}</h2></div><p>{featuredAreDemo ? "Illustrative placements and prices for interface review. Demo listings cannot be booked." : "Admin-approved service terms and fixed published rates. Quotes do not reserve inventory."}</p></div>
+        {localDemoEnabled() ? <div className="demo-callout"><div><b>Local preview data</b><p>Explore three illustrative placements without adding records to Supabase. Demo quotes are disabled.</p></div><div><Link className="button button-secondary button-small" href="/discover?demo=1">Browse demos</Link><Link className="button button-secondary button-small" href="/map?demo=1">Demo map</Link></div></div> : null}
+        {featured.length ? <div className="listing-grid">{featured.map((listing) => <ListingCard key={listing.id} listing={listing} headingLevel={3} href={`/media/${listing.id}${listing.is_demo ? "?demo=1" : ""}`} />)}</div> : <EmptyState title="New placements are on their way" description="Published placements will appear here as they are approved."><LinkButton variant="secondary" href="/discover">Browse screens</LinkButton></EmptyState>}
+      </section>
+
+      <section className="section map-cta" aria-labelledby="map-cta-heading"><div><span className="eyebrow">Explore visually</span><h2 id="map-cta-heading">Find screens on the map</h2><p>Compare published locations and planned mobile routes across Kerala. Open any screen in Google Maps for its exact submitted coordinates.</p><LinkButton href="/map">Explore map →</LinkButton></div><div className="map-cta-art" aria-hidden="true"><span>KOCHI</span><i /><i /><i /><strong>Kerala</strong></div></section>
+
+      <section className="section" id="categories">
+        <div className="section-heading"><div><span className="eyebrow">Media, made flexible</span><h2>Three ways to be seen</h2></div><p>Each format keeps its own honest unit, availability and service promise.</p></div>
+        <div className="category-grid">
+          {categories.map((category, index) => (
+            <article className={`category-card category-${index + 1}`} key={category.name}>
+              <div className="category-icon">{category.icon}</div><span className="category-index">0{index + 1}</span>
+              <h3>{category.name}</h3><b>{category.unit}</b><p>{category.copy}</p>
+              <Link className="coming" href={`/discover?category=${category.slug}`}>Browse format →</Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="process-section" id="process">
+        <div className="process-copy"><span className="eyebrow eyebrow-light">A clearer booking process</span><h2>One payment.<br />Clear decisions.</h2><p>Choose your placements and continue to payment. After payment is verified, Pixlwave coordinates with each owner and confirms each item separately. Payment alone does not reserve inventory.</p><Link href="/auth/sign-up" className="button button-mint">Create your account →</Link></div>
+        <ol className="timeline">
+          <li><span>01</span><div><h3>Build one cart</h3><p>Select dated media units and the exact creative version. New additions use a new cart.</p></div></li>
+          <li><span>02</span><div><h3>Pay once, upfront</h3><p>All submitted items are included. The cart stays unreserved while review is pending.</p></div></li>
+          <li><span>03</span><div><h3>Admin coordinates</h3><p>Only Pixlwave admins discuss availability with owners and decide within 168 hours.</p></div></li>
+          <li><span>04</span><div><h3>Each item resolves</h3><p>Accepted items reserve capacity; rejected items enter the manual refund queue.</p></div></li>
+        </ol>
+      </section>
+
+      <section className="policy-strip" id="policy">
+        <div><span className="eyebrow">Know before you pay</span><h2>Timing you can plan around.</h2></div>
+        <div className="policy-stat"><strong>168h</strong><span>Admin review and advertiser cancellation cutoff from successful payment</span></div>
+        <div className="policy-stat"><strong>192h</strong><span>Minimum notice before the first operating or show start</span></div>
+        <p>Payment alone is not confirmation. Timely advertiser cancellation returns 95% of the cancelled line; owner inability or non-delivery remains reviewable later.</p>
+      </section>
+    </main>
+  );
+}

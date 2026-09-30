@@ -1,10 +1,21 @@
 # P05 handoff - Payments and booking integration
 
-Plan version: 1.0 draft. Updated: 2026-09-25.
-Status: IMPLEMENTED IN WORKSPACE; DATABASE AND REAL SANDBOX ACCEPTANCE PENDING.
-Implementation revision: uncommitted workspace changes on 2026-09-25.
-Application tests: 50 unit tests passed; migration integration test blocked by missing disposable database.
+Plan version: 1.0 draft. Updated: 2026-09-29.
+Status: IMPLEMENTED; DATABASE REPLAY PASSED; REAL SANDBOX ACCEPTANCE PENDING.
+Implementation revision: uncommitted workspace changes through 2026-09-29.
+Application tests: 85 unit/API tests passed; complete disposable migration suite passed. Historical validation rows below retain their original dates.
 Manual acceptance: NOT REVIEWED
+
+## Current deployment and replay evidence — 29 September 2026
+
+The historical validation rows below describe the 25 September baseline. They are superseded for local/database checks by this increment, while real provider/manual acceptance remains open.
+
+- Approved forward migrations `202609280002_resumable_creatives.sql` and `202609280003_payment_capture_outcome_fix.sql` are deployed to the linked Supabase project. Read-back verifies session RLS, service-only finalization and the corrected payment-capture function. The original payment migration was preserved.
+- `node scripts/test-disposable-migrations.mjs` passed the complete SQL suite in a fresh local PostgreSQL database, including capture idempotence/exceptions, grouped allocations/refunds and capacity races. The disposable database was removed. This is database fixture evidence, not Razorpay provider evidence.
+- Local application checks pass with 85 tests. Live signed >6 MB creative upload, interruption/resume, foreign-account denial and concurrent finalization passed; scoped test objects/assets/sessions were removed. Authenticated RSC dashboard/cart/creative/booking-filter routes also passed.
+- Payment UI preserves Continue to Payment, uses a shared SDK loader with timeout/retry, handles dismissal and closes/aborts on navigation. Browser callbacks only navigate to server-backed booking status. Booking updates use periodic server refresh as chosen by the user; no new booking Realtime trigger was added.
+- Razorpay test key, secret and webhook secret are absent from the current configuration. Real capture/webhook/manual-refund/receipt acceptance remains BLOCKED. No payment was attempted and the phase is not signed off.
+- Remaining media hardening: real video probing/scanning and abandoned upload-session object cleanup. Fulfillment and owner settlement remain P06 dependencies.
 
 ## Authority and dependencies
 

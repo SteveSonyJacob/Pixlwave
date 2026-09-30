@@ -11,7 +11,7 @@ function field(formData: FormData, name: string) {
 
 function destination(formData: FormData) {
   const raw = field(formData, "next");
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/account";
+  return raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\") && !/[\u0000-\u001f]/.test(raw) ? raw : "/account";
 }
 
 function applicationOrigin() {
@@ -26,45 +26,53 @@ function authRedirect(path: string, key: "error" | "message", value: string): ne
 export async function signInWithPassword(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signInWithPassword({ email: field(formData, "email"), password: field(formData, "password") });
-  if (error) authRedirect("/auth/sign-in", "error", error.message);
+  const next = destination(formData);
+  if (error) redirect(`/auth/sign-in?next=${encodeURIComponent(next)}&error=${encodeURIComponent(error.message)}`);
+  if (next === "/owner" || next.startsWith("/owner/")) await supabase.rpc("select_account_mode", { requested_mode: "owner" });
+  if (next === "/advertiser" || next.startsWith("/advertiser/")) await supabase.rpc("select_account_mode", { requested_mode: "advertiser" });
   revalidatePath("/", "layout");
-  redirect(destination(formData));
+  redirect(next);
 }
 
 export async function signUpWithPassword(formData: FormData) {
   const supabase = await createServerSupabaseClient();
   const email = field(formData, "email");
   const password = field(formData, "password");
-  if (password.length < 12) authRedirect("/auth/sign-up", "error", "Use at least 12 characters.");
+  const next = destination(formData);
+  if (password.length < 12) redirect(`/auth/sign-up?next=${encodeURIComponent(next)}&error=${encodeURIComponent("Use at least 12 characters.")}`);
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${applicationOrigin()}/auth/callback?next=/account`,
+      emailRedirectTo: `${applicationOrigin()}/auth/callback?next=${encodeURIComponent(next)}`,
       data: { full_name: field(formData, "fullName"), business_name: field(formData, "businessName") }
     }
   });
-  if (error) authRedirect("/auth/sign-up", "error", error.message);
-  authRedirect("/auth/sign-in", "message", `Check ${email} to verify your account.`);
+  if (error) redirect(`/auth/sign-up?next=${encodeURIComponent(next)}&error=${encodeURIComponent(error.message)}`);
+  redirect(`/auth/sign-in?next=${encodeURIComponent(next)}&message=${encodeURIComponent(`Check ${email} to verify your account.`)}`);
 }
 
 export async function sendPhoneOtp(formData: FormData) {
   if (!isPhoneAuthEnabled()) authRedirect("/auth/sign-in", "error", "Phone authentication is not enabled.");
   const supabase = await createServerSupabaseClient();
   const phone = field(formData, "phone");
+  const next = destination(formData);
   if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) authRedirect("/auth/sign-in", "error", "Use an international phone number such as +919876543210.");
   const { error } = await supabase.auth.signInWithOtp({ phone, options: { shouldCreateUser: true } });
   if (error) authRedirect("/auth/sign-in", "error", error.message);
-  redirect(`/auth/verify-phone?phone=${encodeURIComponent(phone)}`);
+  redirect(`/auth/verify-phone?phone=${encodeURIComponent(phone)}&next=${encodeURIComponent(next)}`);
 }
 
 export async function verifyPhoneOtp(formData: FormData) {
   if (!isPhoneAuthEnabled()) authRedirect("/auth/sign-in", "error", "Phone authentication is not enabled.");
   const supabase = await createServerSupabaseClient();
+  const next = destination(formData);
   const { error } = await supabase.auth.verifyOtp({ phone: field(formData, "phone"), token: field(formData, "token"), type: "sms" });
-  if (error) authRedirect(`/auth/verify-phone?phone=${encodeURIComponent(field(formData, "phone"))}`, "error", error.message);
+  if (error) redirect(`/auth/verify-phone?phone=${encodeURIComponent(field(formData, "phone"))}&next=${encodeURIComponent(next)}&error=${encodeURIComponent(error.message)}`);
+  if (next === "/owner" || next.startsWith("/owner/")) await supabase.rpc("select_account_mode", { requested_mode: "owner" });
+  if (next === "/advertiser" || next.startsWith("/advertiser/")) await supabase.rpc("select_account_mode", { requested_mode: "advertiser" });
   revalidatePath("/", "layout");
-  redirect("/account");
+  redirect(next);
 }
 
 export async function requestPasswordRecovery(formData: FormData) {

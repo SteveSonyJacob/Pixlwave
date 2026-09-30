@@ -6,6 +6,8 @@ import { z } from "zod";
 import { requireIdentity } from "@/lib/auth/identity";
 import { listingInputSchema } from "@/lib/inventory/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { draftError, draftPayloadSchema, type DraftSaveResult } from "@/lib/inventory/drafts";
+import { listingFormData, listingFormSchema } from "@/components/listing-form-model";
 
 function text(form: FormData, name: string) { return String(form.get(name) ?? "").trim(); }
 function go(path: string, kind: "message" | "error", value: string): never { redirect(`${path}?${kind}=${encodeURIComponent(value)}`); }
@@ -27,9 +29,10 @@ export async function submitOwnerVerification(form: FormData) {
 }
 
 function categoryDetails(form: FormData, category: string) {
-  if (category === "led") return { screenWidthPx: Number(text(form,"screenWidthPx")), screenHeightPx: Number(text(form,"screenHeightPx")), physicalWidthMetres: Number(text(form,"physicalWidthMetres")), physicalHeightMetres: Number(text(form,"physicalHeightMetres")), dailyCapacity: 1 };
-  if (category === "theatre") return { venueName: text(form,"venueName"), auditoriumName: text(form,"auditoriumName"), slotsPerShow: Number(text(form,"slotsPerShow")), showStarts: text(form,"showStarts").split(/\r?\n/).map((value) => value.trim()).filter(Boolean) };
-  return { vehicleLabel: text(form,"vehicleLabel"), rotatingSlots: Number(text(form,"rotatingSlots")), routeName: text(form,"routeName"), routeGeoJson: text(form,"routeGeoJson"), customRouteAllowed: form.get("customRouteAllowed") === "on" };
+  const shared = { pincode: text(form,"pincode"), facingDirection: text(form,"facingDirection"), trafficType: text(form,"trafficType"), visibility: text(form,"visibility"), facilities: text(form,"facilities").split(/[,\n]/).map((value) => value.trim()).filter(Boolean) };
+  if (category === "led") return { ...shared, screenWidthPx: Number(text(form,"screenWidthPx")), screenHeightPx: Number(text(form,"screenHeightPx")), physicalWidthMetres: Number(text(form,"physicalWidthMetres")), physicalHeightMetres: Number(text(form,"physicalHeightMetres")), pixelPitch: text(form,"pixelPitch"), dailyCapacity: 1 };
+  if (category === "theatre") return { ...shared, venueName: text(form,"venueName"), auditoriumName: text(form,"auditoriumName"), slotsPerShow: Number(text(form,"slotsPerShow")), showStarts: text(form,"showStarts").split(/\r?\n/).map((value) => value.trim()).filter(Boolean) };
+  return { ...shared, vehicleLabel: text(form,"vehicleLabel"), rotatingSlots: Number(text(form,"rotatingSlots")), routeName: text(form,"routeName"), routeGeoJson: text(form,"routeGeoJson"), customRouteAllowed: form.get("customRouteAllowed") === "on" };
 }
 
 function parseListingForm(form: FormData, errorPath: string) {
@@ -37,6 +40,7 @@ function parseListingForm(form: FormData, errorPath: string) {
   const common = {
     category, title: text(form,"title"), description: text(form,"description"), locality: text(form,"locality"), district: text(form,"district"),
     latitude: text(form,"latitude"), longitude: text(form,"longitude"), sourceProvider: text(form,"sourceProvider"), sourcePlaceId: text(form,"sourcePlaceId"),
+    pincode: text(form,"pincode"), facingDirection: text(form,"facingDirection"), trafficType: text(form,"trafficType"), visibility: text(form,"visibility"), facilities: text(form,"facilities").split(/[,\n]/).map((value) => value.trim()).filter(Boolean),
     audienceEstimate: text(form,"audienceEstimate"), audienceBasis: text(form,"audienceBasis"), adDurationSeconds: text(form,"adDurationSeconds"), playsPerUnit: text(form,"playsPerUnit"),
     operatingStart: text(form,"operatingStart"), operatingEnd: text(form,"operatingEnd"), baseRatePaise: Math.round(Number(text(form,"baseRateRupees")) * 100), servicePromise: text(form,"servicePromise")
   };
@@ -76,4 +80,44 @@ export async function submitListing(form: FormData) {
   if (error) go("/owner", "error", error.message);
   revalidatePath("/owner");
   go("/owner", "message", "Listing submitted for admin review.");
+}
+
+export async function submitListingRevision(form: FormData) {
+  await requireIdentity();
+  const revisionId = text(form, "revisionId");
+  if (!z.uuid().safeParse(revisionId).success) go("/owner", "error", "Invalid listing revision.");
+  const { error } = await (await createServerSupabaseClient()).rpc("submit_inventory_listing_revision", { target_revision: revisionId });
+  if (error) go("/owner", "error", error.message);
+  revalidatePath("/owner"); revalidatePath("/admin");
+  go("/owner", "message", "Replacement revision submitted. The current published listing remains live during review.");
+}
+
+export async function reorderListingMedia(input: unknown): Promise<{ ok: true } | { ok: false; message: string }> {
+  await requireIdentity();
+  const parsed = z.object({ assetIds: z.array(z.uuid()).min(1).max(20) }).strict().safeParse(input);
+  if (!parsed.success || new Set(parsed.data.assetIds).size !== parsed.data.assetIds.length) return { ok: false, message: "Choose a valid image order." };
+  const { error } = await (await createServerSupabaseClient()).rpc("reorder_listing_media", { asset_ids: parsed.data.assetIds });
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/owner");
+  return { ok: true };
+}
+
+export async function completeListingDraft(input: unknown): Promise<DraftSaveResult> {
+  const parsed = z.object({ id: z.uuid(), revision: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }).strict().safeParse(input);
+  if (!parsed.success) return { ok: false, kind: "invalid", message: "Save your draft checkpoint before completing it." };
+  const identity = await requireIdentity();
+  const supabase = await createServerSupabaseClient();
+  const { data: draft, error: readError } = await supabase.from("owner_listing_drafts")
+    .select("payload,listing_id,revision").eq("id", parsed.data.id).eq("owner_id", identity.userId).maybeSingle();
+  if (readError || !draft) return draftError(readError?.code ?? "42501");
+  if (Number(draft.revision) !== parsed.data.revision) return draftError("40001");
+  const checkpoint = draftPayloadSchema.safeParse(draft.payload);
+  const full = checkpoint.success ? listingFormSchema.safeParse(checkpoint.data) : null;
+  if (!full?.success) return { ok: false, kind: "invalid", message: "Complete all required listing details before saving to inventory." };
+  const path = draft.listing_id ? `/owner/listings/${draft.listing_id}/edit` : `/owner/listings/new?draft=${parsed.data.id}`;
+  const payload = parseListingForm(listingFormData(full.data, draft.listing_id ?? undefined), path);
+  const { error } = await supabase.rpc("commit_owner_listing_draft", { target_draft: parsed.data.id, expected_revision: parsed.data.revision, listing_input: payload });
+  if (error) return draftError(error.code);
+  revalidatePath("/owner");
+  go("/owner", "message", "Listing draft saved. Add photos and submit it when ready.");
 }

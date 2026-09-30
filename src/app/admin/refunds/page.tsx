@@ -12,7 +12,7 @@ type Capture = { cart_id: string; provider_payment_id: string; provider_fee_pais
 export default async function AdminRefundsPage({ searchParams }: PageProps) {
   const [, query] = await Promise.all([requireAdminMfa(), searchParams]);
   const client = await createServerSupabaseClient();
-  const [{ data: obligations }, { data: captures }, { data: transactions }, { data: exceptions }, { data: orders }, { data: alerts }] = await Promise.all([
+  const [{ data: obligations, error: obligationsError }, { data: captures, error: capturesError }, { data: transactions, error: transactionsError }, { data: exceptions, error: exceptionsError }, { data: orders, error: ordersError }, { data: alerts, error: alertsError }] = await Promise.all([
     client.from("refund_obligations").select("id,cart_id,booking_line_id,reason,gross_amount_paise,fee_amount_paise,processing_charge_paise,refund_amount_paise,status").order("created_at"),
     client.from("payment_captures").select("cart_id,provider_payment_id,provider_fee_paise").eq("outcome", "allocated"),
     client.from("manual_refund_transactions").select("id,cart_id,provider_refund_id,amount_paise,completed_at").order("recorded_at", { ascending: false }).limit(50),
@@ -20,6 +20,7 @@ export default async function AdminRefundsPage({ searchParams }: PageProps) {
     client.from("payment_orders").select("cart_id,provider_order_id,receipt,state,created_at").order("created_at", { ascending: false }).limit(50),
     client.from("payment_reconciliation_alerts").select("provider_payment_id,cart_id,amount_paise,status").eq("status", "missing_webhook").order("detected_at"),
   ]);
+  if (obligationsError || capturesError || transactionsError || exceptionsError || ordersError || alertsError) throw new Error("Refund and payment reconciliation records could not be loaded.");
   const pending = ((obligations ?? []) as Obligation[]).filter((item) => item.status === "pending_manual");
   const captureByCart = new Map(((captures ?? []) as Capture[]).map((capture) => [capture.cart_id, capture]));
   const grouped = Map.groupBy(pending, (item) => item.cart_id);
